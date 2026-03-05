@@ -21,10 +21,3 @@ def start(project_name: str, at: Optional[str] = None):
 @click.option("--at", help='Hours previous to end the timer, e.g. "2 hours ago"')
 def stop(at: Optional[str] = None):
     print("Stopping the timer for the current project")
-
-
-# def main():
-# parser = argparse.ArgumentParser(description="vmt - VisualMode (Time) Tracker")
-# parser.add_argument("name")
-# args = parser.parse_args()
-# print(f"Hello, {args.name}")
