@@ -14,5 +14,7 @@ def format_timestamp(utc_datetime: datetime) -> str:
     # H:MM[AM|PM], e.g. 6:32PM
     format = "%-I:%M%p"
 
+    # Make sure to convert to local time (with `astimezone()`) before formatting
+    # the string.
     local_datetime = utc_datetime.astimezone()
     return local_datetime.strftime(format)

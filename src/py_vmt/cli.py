@@ -134,8 +134,6 @@ def start(ctx, project_name: str, at: Optional[str] = None) -> None:
         ctx.abort()
 
     start_time = datetime.now(timezone.utc)
-    # Make sure to convert to local time (with `astimezone()`) before printing
-    # to stdout.
     formatted_start_time = time_helpers.format_timestamp(start_time)
 
     # • Started tracking 'visual-mode-tracking' [cli] at 11:11 AM
