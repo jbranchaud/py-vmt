@@ -66,7 +66,7 @@ def start(ctx, project_name: str, at: Optional[str] = None) -> None:
     click.echo(msg)
 
     if ctx.obj.active_session:
-        msg = f"Error: already tracking '{ctx.obj.active_session['project_name']}. Stop the current session first."
+        msg = f"Error: already tracking '{ctx.obj.active_session['project_name']}'. Stop the current session first."
         click.echo(msg)
         ctx.abort()
 
