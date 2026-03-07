@@ -65,16 +65,21 @@ def start(ctx, project_name: str, at: Optional[str] = None) -> None:
     msg = f"start cmd ctx - data_dir: {ctx.obj.data_dir}, config_dir: {ctx.obj.config_dir}"
     click.echo(msg)
 
-    click.echo(f"Starting a time for project {project_name}")
-    if at:
-        click.echo(f"  with flag --at of '{at}'")
-
     if ctx.obj.active_session:
         msg = f"Error: already tracking '{ctx.obj.active_session['project_name']}. Stop the current session first."
         click.echo(msg)
         ctx.abort()
 
     start_time = datetime.now(timezone.utc)
+    formatted_start_time = start_time.strftime("%-I:%M%p")
+
+    # • Started tracking 'visual-mode-tracking' [cli] at 11:11 AM
+    click.echo(f"• Started tracking '{project_name}' at {formatted_start_time}")
+
+    # TODO: Add support for actually using the `--at` flag
+    if at:
+        click.echo(f"  with flag --at of '{at}'")
+
     ctx.obj.start_active_session(
         project_name,
         start_time,
