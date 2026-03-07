@@ -1,5 +1,11 @@
+import dateparser
 from datetime import datetime
 import math
+
+
+def parse_to_datetime(at: str) -> datetime:
+    settings = {"TO_TIMEZONE": "UTC", "RETURN_AS_TIMEZONE_AWARE": True}
+    return dateparser.parse(at, settings=settings)
 
 
 def format_time_delta(diff) -> str:

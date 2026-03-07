@@ -133,7 +133,10 @@ def start(ctx, project_name: str, at: Optional[str] = None) -> None:
         click.echo(msg)
         ctx.abort()
 
-    start_time = datetime.now(timezone.utc)
+    if at:
+        start_at = time_helpers.parse_to_datetime(at)
+
+    start_time = start_at or datetime.now(timezone.utc)
     formatted_start_time = time_helpers.format_timestamp(start_time)
 
     # • Started tracking 'visual-mode-tracking' [cli] at 11:11 AM
