@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -13,6 +14,7 @@ class CliContext:
         self.data_dir: Path = CliContext.get_data_dir()
         self.config_dir: Path = CliContext.get_config_dir()
         self.active_session_file: Path = self.data_dir / "active_session.json"
+        self.session_log_file: Path = self.data_dir / "session_log.json"
         self.active_session: dict | None = None
         self.load_active_session()
 
@@ -33,6 +35,22 @@ class CliContext:
         data["start_time"] = datetime.fromisoformat(data["start_time"])
         return data
 
+    @staticmethod
+    def marshal_session_data(data: dict) -> dict:
+        marshalled_data = copy.copy(data)
+
+        CliContext.marshal_datetime_field("start_time", marshalled_data)
+        CliContext.marshal_datetime_field("end_time", marshalled_data)
+
+        return marshalled_data
+
+    @staticmethod
+    def marshal_datetime_field(field_name: str, data: dict) -> dict:
+        if isinstance(data[field_name], datetime):
+            data[field_name] = datetime.isoformat(data[field_name])
+
+        return data
+
     def load_active_session(self) -> None:
         if self.active_session_file.exists():
             # TODO: good place to use Pydantic eventually
@@ -46,6 +64,40 @@ class CliContext:
                 {"project_name": project_name, "start_time": start_time.isoformat()}
             )
         )
+
+    # TODO: add explicit typing for the return type
+    def stop_active_session(self, at: datetime) -> dict:
+        assert (
+            self.active_session
+        ), "An active session is required in order to stop an active session"
+
+        session = {"end_time": at, **self.active_session}
+
+        # log current session to "database"
+        self._write_event_to_session_log(session)
+
+        # clear out active session file
+        self._wipe_active_session_file()
+
+        return session
+
+    def _wipe_active_session_file(self) -> None:
+        empty_json = "{}"
+        self.active_session_file.write_text(empty_json)
+
+    def _write_event_to_session_log(self, session) -> None:
+        existing_sessions = self._load_session_log()
+
+        writeable_session = CliContext.marshal_session_data(session)
+        existing_sessions.append(writeable_session)
+
+        self.session_log_file.write_text(json.dumps(existing_sessions))
+
+    def _load_session_log(self) -> list:
+        if self.session_log_file.exists():
+            return json.loads(self.session_log_file.read_text())
+
+        return []
 
 
 # define top-level CLI group
@@ -122,5 +174,17 @@ def status(ctx) -> None:
 # define `stop` subcommand
 @cli.command()
 @click.option("--at", help='Hours previous to end the timer, e.g. "2 hours ago"')
-def stop(at: Optional[str] = None):
-    click.echo("Stopping the timer for the current project")
+@click.pass_context
+def stop(ctx, at: Optional[str] = None):
+    if not ctx.obj.active_session:
+        msg = "Error: No active session being tracked. Start a session first."
+        click.echo(msg)
+        ctx.abort()
+
+    stopped_at = datetime.now(timezone.utc)
+    latest_sesh = ctx.obj.stop_active_session(stopped_at)
+
+    duration = latest_sesh["end_time"] - latest_sesh["start_time"]
+    elapsed_time = time_helpers.format_time_delta(duration)
+
+    click.echo(f"• Stopped tracking '{latest_sesh['project_name']}' ({elapsed_time})")
