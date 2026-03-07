@@ -8,7 +8,8 @@ from py_vmt import time_helpers
 
 
 class CliContext:
-    def __init__(self) -> None:
+    def __init__(self, verbose: bool) -> None:
+        self.verbose: bool = verbose
         self.data_dir: Path = CliContext.get_data_dir()
         self.config_dir: Path = CliContext.get_config_dir()
         self.active_session_file: Path = self.data_dir / "active_session.json"
@@ -49,10 +50,19 @@ class CliContext:
 
 # define top-level CLI group
 @click.group()
+@click.option(
+    "--verbose",
+    "-v",
+    help="See extra output when running commands",
+    is_flag=True,
+)
 @click.pass_context
-def cli(ctx):
+def cli(ctx, verbose: bool):
     ctx.ensure_object(dict)
-    ctx.obj = CliContext()
+    ctx.obj = CliContext(verbose)
+
+    if ctx.obj.verbose:
+        click.echo("[ running `vmt` in verbose mode ]")
 
 
 # define `start` subcommand
@@ -62,8 +72,9 @@ def cli(ctx):
 @click.pass_context
 # TODO: How can I add type annotations to `ctx` so that I get IDE type hints?
 def start(ctx, project_name: str, at: Optional[str] = None) -> None:
-    msg = f"start cmd ctx - data_dir: {ctx.obj.data_dir}, config_dir: {ctx.obj.config_dir}"
-    click.echo(msg)
+    if ctx.obj.verbose:
+        msg = f"[ start cmd ctx - data_dir: {ctx.obj.data_dir}, config_dir: {ctx.obj.config_dir} ]"
+        click.echo(msg)
 
     if ctx.obj.active_session:
         msg = f"Error: already tracking '{ctx.obj.active_session['project_name']}'. Stop the current session first."
@@ -79,8 +90,8 @@ def start(ctx, project_name: str, at: Optional[str] = None) -> None:
     click.echo(f"• Started tracking '{project_name}' at {formatted_start_time}")
 
     # TODO: Add support for actually using the `--at` flag
-    if at:
-        click.echo(f"  with flag --at of '{at}'")
+    if at and ctx.obj.verbose:
+        click.echo(f"  [ with flag --at of '{at}' ]")
 
     ctx.obj.start_active_session(
         project_name,
