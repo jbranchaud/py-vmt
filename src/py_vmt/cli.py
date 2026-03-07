@@ -73,7 +73,7 @@ def start(ctx, project_name: str, at: Optional[str] = None) -> None:
     start_time = datetime.now(timezone.utc)
     # Make sure to convert to local time (with `astimezone()`) before printing
     # to stdout.
-    formatted_start_time = start_time.astimezone().strftime("%-I:%M%p")
+    formatted_start_time = format_timestamp(start_time)
 
     # • Started tracking 'visual-mode-tracking' [cli] at 11:11 AM
     click.echo(f"• Started tracking '{project_name}' at {formatted_start_time}")
@@ -118,3 +118,11 @@ def format_time_delta(diff) -> str:
 
     minutes = math.floor(diff.seconds / 60)
     return f"{minutes}m"
+
+
+def format_timestamp(utc_datetime: datetime) -> str:
+    # H:MM[AM|PM], e.g. 6:32PM
+    format = "%-I:%M%p"
+
+    local_datetime = utc_datetime.astimezone()
+    return local_datetime.strftime(format)
