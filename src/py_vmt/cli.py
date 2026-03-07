@@ -4,7 +4,7 @@ from pathlib import Path
 from platformdirs import user_data_dir, user_config_dir
 import click
 from typing import Optional
-import math
+from py_vmt import time_helpers
 
 
 class CliContext:
@@ -73,7 +73,7 @@ def start(ctx, project_name: str, at: Optional[str] = None) -> None:
     start_time = datetime.now(timezone.utc)
     # Make sure to convert to local time (with `astimezone()`) before printing
     # to stdout.
-    formatted_start_time = format_timestamp(start_time)
+    formatted_start_time = time_helpers.format_timestamp(start_time)
 
     # • Started tracking 'visual-mode-tracking' [cli] at 11:11 AM
     click.echo(f"• Started tracking '{project_name}' at {formatted_start_time}")
@@ -96,8 +96,11 @@ def status(ctx) -> None:
     if sesh and "project_name" in sesh:
         curr_time = datetime.now(timezone.utc)
         time_diff = curr_time - sesh["start_time"]
-        elapsed_time = format_time_delta(time_diff)
-        click.echo(f"• Tracking '{sesh['project_name']}' for {elapsed_time}")
+        elapsed_time = time_helpers.format_time_delta(time_diff)
+        started_at = time_helpers.format_timestamp(sesh["start_time"])
+
+        msg = f"• Tracking '{sesh['project_name']}' for {elapsed_time} (since {started_at})"
+        click.echo(msg)
     else:
         # • Not tracking
         # Last: 'ccstorage' (8h 45m) at 8:37 AM
@@ -110,19 +113,3 @@ def status(ctx) -> None:
 @click.option("--at", help='Hours previous to end the timer, e.g. "2 hours ago"')
 def stop(at: Optional[str] = None):
     click.echo("Stopping the timer for the current project")
-
-
-def format_time_delta(diff) -> str:
-    if diff.seconds < 60:
-        return f"{diff.seconds}s"
-
-    minutes = math.floor(diff.seconds / 60)
-    return f"{minutes}m"
-
-
-def format_timestamp(utc_datetime: datetime) -> str:
-    # H:MM[AM|PM], e.g. 6:32PM
-    format = "%-I:%M%p"
-
-    local_datetime = utc_datetime.astimezone()
-    return local_datetime.strftime(format)
