@@ -81,9 +81,22 @@ class CliContext:
 
         return session
 
+    def cancel_active_session(self) -> dict:
+        assert (
+            self.active_session
+        ), "An active session is required in order to cancel an active session"
+
+        session = copy.copy(self.active_session)
+        session["end_time"] = datetime.now(timezone.utc)
+
+        self._wipe_active_session_file()
+
+        return session
+
     def _wipe_active_session_file(self) -> None:
         empty_json = "{}"
         self.active_session_file.write_text(empty_json)
+        self.active_session = None
 
     def _write_event_to_session_log(self, session) -> None:
         existing_sessions = self._load_session_log()
@@ -136,6 +149,8 @@ def start(ctx, project_name: str, at: Optional[str] = None) -> None:
     if at:
         start_at = time_helpers.parse_to_datetime(at)
 
+    # TODO: abort if `start_at` isn't earlier than now
+
     start_time = start_at or datetime.now(timezone.utc)
     formatted_start_time = time_helpers.format_timestamp(start_time)
 
@@ -182,10 +197,32 @@ def stop(ctx, at: Optional[str] = None):
         click.echo(msg)
         ctx.abort()
 
+    # TODO: add support for `--at` flag option using
+    # `time_helpers.parse_to_datetime`
+    # And then ensure that the time value is greater than
+    # `latest_sesh['start_time']`
+
     stopped_at = datetime.now(timezone.utc)
     latest_sesh = ctx.obj.stop_active_session(stopped_at)
 
+    # TODO: move this to a `session` dataclass method
     duration = latest_sesh["end_time"] - latest_sesh["start_time"]
     elapsed_time = time_helpers.format_time_delta(duration)
 
     click.echo(f"• Stopped tracking '{latest_sesh['project_name']}' ({elapsed_time})")
+
+
+# define `cancel` subcommand
+@cli.command()
+@click.pass_context
+def cancel(ctx):
+    if not ctx.obj.active_session:
+        msg = "Error: No active session to be cancelled."
+        click.echo(msg)
+        ctx.abort()
+
+    cancelled_sesh = ctx.obj.cancel_active_session()
+    project_name = cancelled_sesh["project_name"]
+    duration = cancelled_sesh["end_time"] - cancelled_sesh["start_time"]
+    elapsed_time = time_helpers.format_time_delta(duration)
+    click.echo(f"• Cancelled session for '{project_name}' ({elapsed_time})")
