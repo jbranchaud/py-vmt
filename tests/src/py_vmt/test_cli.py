@@ -11,7 +11,7 @@ def test_no_status():
         assert "Not tracking" in result.output
 
 
-def test_active_status():
+def test_start_status_stop_flow():
     runner = CliRunner()
 
     with runner.isolated_filesystem():
@@ -37,3 +37,24 @@ def test_active_status():
             stop_result = runner.invoke(cli, ["stop"])
             output = "Stopped tracking 'my-project' (90m)"
             assert output in stop_result.output
+
+
+def test_start_cancel_flow():
+    runner = CliRunner()
+
+    with runner.isolated_filesystem():
+        initial_datetime = datetime.datetime(
+            2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
+        )
+        with freeze_time(initial_datetime) as frozen_datetime:
+            # start a session
+            start_result = runner.invoke(cli, ["start", "my-project"])
+            output = "Started tracking 'my-project' at 10:05AM"
+            assert output in start_result.output
+
+            frozen_datetime.tick(delta=datetime.timedelta(minutes=30))
+
+            # cancel session
+            cancel_result = runner.invoke(cli, ["cancel"])
+            output = "Cancelled session for 'my-project' (30m)"
+            assert output in cancel_result.output
