@@ -146,6 +146,7 @@ def start(ctx, project_name: str, at: Optional[str] = None) -> None:
         click.echo(msg)
         ctx.abort()
 
+    start_at = None
     if at:
         start_at = time_helpers.parse_to_datetime(at)
 
