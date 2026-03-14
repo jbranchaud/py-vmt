@@ -15,3 +15,8 @@ dependencies = [
 
 [project.scripts]
 vmt = "py_vmt.cli:cli"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:Timezone offset does not match system offset:UserWarning",
+]
