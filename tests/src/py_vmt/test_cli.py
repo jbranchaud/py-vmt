@@ -24,10 +24,16 @@ def test_active_status():
             output = "Started tracking 'my-project' at 10:05AM"
             assert output in start_result.output
 
+            frozen_datetime.tick(delta=datetime.timedelta(minutes=30))
+
             # check status
             status_result = runner.invoke(cli, ["status"])
-            assert "Tracking 'my-project'" in status_result.output
+            output = "Tracking 'my-project' for 30m (since 10:05AM)"
+            assert output in status_result.output
+
+            frozen_datetime.tick(delta=datetime.timedelta(hours=1))
 
             # stop a session
             stop_result = runner.invoke(cli, ["stop"])
-            assert "Stopped tracking 'my-project'" in stop_result.output
+            output = "Stopped tracking 'my-project' (90m)"
+            assert output in stop_result.output
