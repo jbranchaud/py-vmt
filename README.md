@@ -16,3 +16,14 @@ Run the CLI in development with `uv`:
 Error: already tracking 'taco'. Stop the current session first.
 Aborted!
 ```
+
+## Testing
+
+The test suite uses `pytest` and `click`'s `CliRunner` to verify the behavior of
+the `vmt` CLI.
+
+Run the tests like so:
+
+```bash
+❯ uv run pytest
+```
