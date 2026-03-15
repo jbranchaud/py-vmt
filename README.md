@@ -13,6 +13,6 @@ Run the CLI in development with `uv`:
 • Tracking 'taco' for 3m
 
 ❯ uv run vmt start burrito
-Error: already tracking 'taco. Stop the current session first.
+Error: already tracking 'taco'. Stop the current session first.
 Aborted!
 ```
