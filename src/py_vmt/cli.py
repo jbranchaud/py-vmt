@@ -32,30 +32,6 @@ class CliContext:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    # TODO: Delete this once `Session` is fully implemented
-    @staticmethod
-    def hydrate_session_data(data: dict) -> dict:
-        # TODO: gonna need to hydrate more than just the `start_time`
-        data["start_time"] = datetime.fromisoformat(data["start_time"])
-        return data
-
-    # TODO: Delete this once `Session` is fully implemented
-    @staticmethod
-    def marshal_session_data(data: dict) -> dict:
-        marshalled_data = copy.copy(data)
-
-        CliContext.marshal_datetime_field("start_time", marshalled_data)
-        CliContext.marshal_datetime_field("end_time", marshalled_data)
-
-        return marshalled_data
-
-    @staticmethod
-    def marshal_datetime_field(field_name: str, data: dict) -> dict:
-        if isinstance(data[field_name], datetime):
-            data[field_name] = datetime.isoformat(data[field_name])
-
-        return data
-
     def load_active_session(self) -> None:
         if self.active_session_file.exists():
             # TODO: good place to use Pydantic eventually
@@ -67,14 +43,7 @@ class CliContext:
     def start_active_session(self, project_name: str, start_time: datetime) -> None:
         new_session = Session(start_time, project_name)
         self.active_session_file.write_text(json.dumps(new_session.marshal()))
-        # TODO Remove this comment once marshal-based writing is done
-        # self.active_session_file.write_text(
-        #     json.dumps(
-        #         {"project_name": project_name, "start_time": start_time.isoformat()}
-        #     )
-        # )
 
-    # TODO: add explicit typing for the return type
     def stop_active_session(self, at: datetime) -> Session:
         assert (
             self.active_session
@@ -95,9 +64,6 @@ class CliContext:
         assert (
             self.active_session
         ), "An active session is required in order to cancel an active session"
-
-        # session = copy.copy(self.active_session)
-        # session["end_time"] = datetime.now(timezone.utc)
 
         session = self.active_session
         session.stop()
