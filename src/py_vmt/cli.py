@@ -6,6 +6,8 @@ from platformdirs import user_data_dir, user_config_dir
 import click
 from typing import Optional
 from py_vmt import time_helpers
+from py_vmt.session import Session
+from dataclasses import dataclass
 
 
 class CliContext:
@@ -15,7 +17,7 @@ class CliContext:
         self.config_dir: Path = CliContext.get_config_dir()
         self.active_session_file: Path = self.data_dir / "active_session.json"
         self.session_log_file: Path = self.data_dir / "session_log.json"
-        self.active_session: dict | None = None
+        self.active_session: Session | None = None
         self.load_active_session()
 
     @staticmethod
@@ -30,11 +32,14 @@ class CliContext:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
+    # TODO: Delete this once `Session` is fully implemented
     @staticmethod
     def hydrate_session_data(data: dict) -> dict:
+        # TODO: gonna need to hydrate more than just the `start_time`
         data["start_time"] = datetime.fromisoformat(data["start_time"])
         return data
 
+    # TODO: Delete this once `Session` is fully implemented
     @staticmethod
     def marshal_session_data(data: dict) -> dict:
         marshalled_data = copy.copy(data)
@@ -56,22 +61,27 @@ class CliContext:
             # TODO: good place to use Pydantic eventually
             session_data = json.loads(self.active_session_file.read_text()) or {}
             if "project_name" in session_data:
-                self.active_session = CliContext.hydrate_session_data(session_data)
+                self.active_session = Session.hydrate(session_data)
+                # CliContext.hydrate_session_data(session_data)
 
     def start_active_session(self, project_name: str, start_time: datetime) -> None:
-        self.active_session_file.write_text(
-            json.dumps(
-                {"project_name": project_name, "start_time": start_time.isoformat()}
-            )
-        )
+        new_session = Session(start_time, project_name)
+        self.active_session_file.write_text(json.dumps(new_session.marshal()))
+        # TODO Remove this comment once marshal-based writing is done
+        # self.active_session_file.write_text(
+        #     json.dumps(
+        #         {"project_name": project_name, "start_time": start_time.isoformat()}
+        #     )
+        # )
 
     # TODO: add explicit typing for the return type
-    def stop_active_session(self, at: datetime) -> dict:
+    def stop_active_session(self, at: datetime) -> Session:
         assert (
             self.active_session
         ), "An active session is required in order to stop an active session"
 
-        session = {"end_time": at, **self.active_session}
+        session = self.active_session
+        session.stop()
 
         # log current session to "database"
         self._write_event_to_session_log(session)
@@ -81,37 +91,64 @@ class CliContext:
 
         return session
 
-    def cancel_active_session(self) -> dict:
+    def cancel_active_session(self) -> Session:
         assert (
             self.active_session
         ), "An active session is required in order to cancel an active session"
 
-        session = copy.copy(self.active_session)
-        session["end_time"] = datetime.now(timezone.utc)
+        # session = copy.copy(self.active_session)
+        # session["end_time"] = datetime.now(timezone.utc)
+
+        session = self.active_session
+        session.stop()
 
         self._wipe_active_session_file()
 
         return session
+
+    def load_latest_sessions(self) -> dict:
+        existing_sessions = self._load_session_log()
+
+        return {}
+
+        # find all sessions in the last 7 days
+        #
+        # Note: we care about local time, not UTC
+        #
+        # If we are aggregating the sessions by day, where does a session that
+        # spans two days go?
+        # Probably it goes in the day it started in.
+        # If I have a session that starts at 11pm and goes until 2am.
+        # I suppose that is a late night session, so it should be attributed to
+        # that day.
+        # And then anything after midnight we can treat as part of the next day.
+        # for sesh in existing_sessions:
+        #     sesh["start_time"]
 
     def _wipe_active_session_file(self) -> None:
         empty_json = "{}"
         self.active_session_file.write_text(empty_json)
         self.active_session = None
 
-    def _write_event_to_session_log(self, session) -> None:
-        existing_sessions = self._load_session_log()
+    def _write_event_to_session_log(self, session: Session) -> None:
+        existing_sessions = self._load_raw_session_log()
 
-        writeable_session = CliContext.marshal_session_data(session)
+        writeable_session = session.marshal()
         existing_sessions.append(writeable_session)
 
         self.session_log_file.write_text(json.dumps(existing_sessions))
 
-    def _load_session_log(self) -> list:
+    def _load_raw_session_log(self) -> list:
         if self.session_log_file.exists():
             return json.loads(self.session_log_file.read_text())
 
         return []
 
+    def _load_session_log(self) -> list[Session]:
+        return [Session.hydrate(raw_sesh) for raw_sesh in self._load_raw_session_log()]
+
+
+pass_cli = click.make_pass_decorator(CliContext)
 
 # define top-level CLI group
 @click.group()
@@ -122,7 +159,7 @@ class CliContext:
     is_flag=True,
 )
 @click.pass_context
-def cli(ctx, verbose: bool):
+def cli(ctx: click.Context, verbose: bool):
     ctx.ensure_object(dict)
     ctx.obj = CliContext(verbose)
 
@@ -134,17 +171,18 @@ def cli(ctx, verbose: bool):
 @cli.command()
 @click.argument("project-name")
 @click.option("--at", help='Hours previous to start the timer, e.g. "2 hours ago"')
-@click.pass_context
+# @click.pass_context
+@pass_cli
 # TODO: How can I add type annotations to `ctx` so that I get IDE type hints?
-def start(ctx, project_name: str, at: Optional[str] = None) -> None:
-    if ctx.obj.verbose:
-        msg = f"[ start cmd ctx - data_dir: {ctx.obj.data_dir}, config_dir: {ctx.obj.config_dir} ]"
+def start(cli_ctx: CliContext, project_name: str, at: Optional[str] = None) -> None:
+    if cli_ctx.verbose:
+        msg = f"[ start cmd ctx - data_dir: {cli_ctx.data_dir}, config_dir: {cli_ctx.config_dir} ]"
         click.echo(msg)
 
-    if ctx.obj.active_session:
-        msg = f"Error: already tracking '{ctx.obj.active_session['project_name']}'. Stop the current session first."
+    if cli_ctx.active_session:
+        msg = f"Error: already tracking '{cli_ctx.active_session.project_name}'. Stop the current session first."
         click.echo(msg)
-        ctx.abort()
+        click.get_current_context().abort()
 
     start_at = None
     if at:
@@ -159,10 +197,10 @@ def start(ctx, project_name: str, at: Optional[str] = None) -> None:
     click.echo(f"• Started tracking '{project_name}' at {formatted_start_time}")
 
     # TODO: Add support for actually using the `--at` flag
-    if at and ctx.obj.verbose:
+    if at and cli_ctx.verbose:
         click.echo(f"  [ with flag --at of '{at}' ]")
 
-    ctx.obj.start_active_session(
+    cli_ctx.start_active_session(
         project_name,
         start_time,
     )
@@ -170,16 +208,16 @@ def start(ctx, project_name: str, at: Optional[str] = None) -> None:
 
 # define `status` subcommand
 @cli.command()
-@click.pass_context
-def status(ctx) -> None:
-    sesh = ctx.obj.active_session
-    if sesh and "project_name" in sesh:
+@pass_cli
+def status(cli_ctx: CliContext) -> None:
+    sesh = cli_ctx.active_session
+    if sesh:
         curr_time = datetime.now(timezone.utc)
-        time_diff = curr_time - sesh["start_time"]
+        time_diff = curr_time - sesh.start_time
         elapsed_time = time_helpers.format_time_delta(time_diff)
-        started_at = time_helpers.format_timestamp(sesh["start_time"])
+        started_at = time_helpers.format_timestamp(sesh.start_time)
 
-        msg = f"• Tracking '{sesh['project_name']}' for {elapsed_time} (since {started_at})"
+        msg = f"• Tracking '{sesh.project_name}' for {elapsed_time} (since {started_at})"
         click.echo(msg)
     else:
         # • Not tracking
@@ -191,12 +229,12 @@ def status(ctx) -> None:
 # define `stop` subcommand
 @cli.command()
 @click.option("--at", help='Hours previous to end the timer, e.g. "2 hours ago"')
-@click.pass_context
-def stop(ctx, at: Optional[str] = None):
-    if not ctx.obj.active_session:
+@pass_cli
+def stop(cli_ctx: CliContext, at: Optional[str] = None):
+    if not cli_ctx.active_session:
         msg = "Error: No active session being tracked. Start a session first."
         click.echo(msg)
-        ctx.abort()
+        click.get_current_context().abort()
 
     # TODO: add support for `--at` flag option using
     # `time_helpers.parse_to_datetime`
@@ -204,26 +242,58 @@ def stop(ctx, at: Optional[str] = None):
     # `latest_sesh['start_time']`
 
     stopped_at = datetime.now(timezone.utc)
-    latest_sesh = ctx.obj.stop_active_session(stopped_at)
+    latest_sesh = cli_ctx.stop_active_session(stopped_at)
+
+    assert latest_sesh.end_time, "Expected this session to have an 'end_time' set"
 
     # TODO: move this to a `session` dataclass method
-    duration = latest_sesh["end_time"] - latest_sesh["start_time"]
+    duration = latest_sesh.end_time - latest_sesh.start_time
     elapsed_time = time_helpers.format_time_delta(duration)
 
-    click.echo(f"• Stopped tracking '{latest_sesh['project_name']}' ({elapsed_time})")
+    click.echo(f"• Stopped tracking '{latest_sesh.project_name}' ({elapsed_time})")
 
 
 # define `cancel` subcommand
 @cli.command()
-@click.pass_context
-def cancel(ctx):
-    if not ctx.obj.active_session:
+@pass_cli
+def cancel(cli_ctx: CliContext):
+    if not cli_ctx.active_session:
         msg = "Error: No active session to be cancelled."
         click.echo(msg)
-        ctx.abort()
+        click.get_current_context().abort()
 
-    cancelled_sesh = ctx.obj.cancel_active_session()
-    project_name = cancelled_sesh["project_name"]
-    duration = cancelled_sesh["end_time"] - cancelled_sesh["start_time"]
+    cancelled_sesh = cli_ctx.cancel_active_session()
+    project_name = cancelled_sesh.project_name
+
+    assert cancelled_sesh.end_time, "Expected this session to have an 'end_time' set"
+
+    duration = cancelled_sesh.end_time - cancelled_sesh.start_time
     elapsed_time = time_helpers.format_time_delta(duration)
     click.echo(f"• Cancelled session for '{project_name}' ({elapsed_time})")
+
+
+# define `log` subcommand
+@cli.command()
+@pass_cli
+def log(cli_ctx: CliContext):
+    # read in the session log file if it exists
+    sessions = cli_ctx.load_latest_sessions()
+
+    # make sure to also display the active session if there is one
+    active_session = cli_ctx.active_session
+
+    print("Session Log")
+
+    if active_session:
+        # Assume, for now, that an active session is always 'today'
+        # Later I'll have to account for a session that started the
+        # previous day.
+        start_time = time_helpers.format_timestamp(active_session.start_time)
+
+        curr_time = datetime.now(timezone.utc)
+        time_diff = curr_time - active_session.start_time
+        duration = time_helpers.format_time_delta(time_diff)
+
+        project_name = active_session.project_name
+
+        print(f"  {start_time} - ...\t{duration}\t{project_name}")

@@ -5,6 +5,8 @@ import pytest
 from py_vmt.cli import cli, CliContext
 
 
+# auto fixture for all test cases that monkeypatches the platform dirs to a tmp
+# path so that test side-effects don't persist between runs
 @pytest.fixture(autouse=True)
 def use_tmp_platform_dirs(tmp_path, monkeypatch):
     data_dir = tmp_path / "data"
@@ -88,3 +90,66 @@ def test_start_at_past_time():
         status_result = runner.invoke(cli, ["status"])
         output = "Tracking 'my-project' for 63m (since 9:32AM)"
         assert output in status_result.output
+
+
+@pytest.mark.xfail
+def test_log_recent_activity():
+    runner = CliRunner()
+
+    # set up the data dir file with some existing session entries
+    initial_datetime = datetime.datetime(
+        2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
+    )
+    with freeze_time(initial_datetime) as frozen_datetime:
+        # record 8 hour session
+        runner.invoke(cli, ["start", "TIL"])
+        frozen_datetime.tick(delta=datetime.timedelta(hours=8))
+        runner.invoke(cli, ["stop"])
+
+        # 1 day later
+        frozen_datetime.tick(delta=datetime.timedelta(hours=13))
+
+        # record another day
+        runner.invoke(cli, ["start", "still"])
+        frozen_datetime.tick(delta=datetime.timedelta(hours=4, minutes=32))
+        runner.invoke(cli, ["stop"])
+        frozen_datetime.tick(delta=datetime.timedelta(minutes=28))
+        runner.invoke(cli, ["start", "TIL"])
+        frozen_datetime.tick(delta=datetime.timedelta(hours=3, minutes=3))
+        runner.invoke(cli, ["stop"])
+
+        # to the next day
+        frozen_datetime.tick(delta=datetime.timedelta(hours=14))
+
+        # record one more day
+        runner.invoke(cli, ["start", "Client A", "--at", "33 minutes ago"])
+        frozen_datetime.tick(delta=datetime.timedelta(hours=6))
+        runner.invoke(cli, ["stop"])
+        frozen_datetime.tick(delta=datetime.timedelta(minutes=15))
+        runner.invoke(cli, ["start", "TIL"])
+        frozen_datetime.tick(delta=datetime.timedelta(minutes=28))
+        runner.invoke(cli, ["stop"])
+
+        frozen_datetime.tick(delta=datetime.timedelta(hours=14))
+
+        # Time to check the log
+        log_result = runner.invoke(cli, ["log"])
+
+        expected_log_output = """
+Session Log
+Yesterday
+  9:12 AM - 3:53 PM        6h 33m      Client A
+  4:08 PM - 4:36 PM           28m      TIL
+
+Friday, March 13, 2026
+  8:59 AM - 5:44 PM        8h 44m      ccstorage [two-way-msg]
+
+Thursday, March 12, 2026
+  8:56 AM - 3:59 PM        7h 3m       ccstorage [two-way-msg]
+
+Wednesday, March 11, 2026
+  9:06 AM - 4:55 PM        7h 49m      ccstorage [two-way-msg]
+"""
+
+        for line in expected_log_output.split('\n'):
+            assert line in log_result.output
