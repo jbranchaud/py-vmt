@@ -1,5 +1,5 @@
-import copy
-from datetime import datetime, timezone
+import collections
+from datetime import date, datetime, timedelta, timezone
 import json
 from pathlib import Path
 from platformdirs import user_data_dir, user_config_dir
@@ -72,11 +72,23 @@ class CliContext:
 
         return session
 
-    def load_latest_sessions(self) -> dict:
+    type DateToSessionDict = collections.defaultdict[date, list[Session]]
+
+    def load_latest_sessions(self) -> DateToSessionDict:
         existing_sessions = self._load_session_log()
 
-        return {}
+        days_ago_list = [timedelta(days=neg_index) for neg_index in range(0, -7, -1)]
+        last_seven_days = [(datetime.now() + days_ago).date() for days_ago in days_ago_list]
+        sessions_grouped_by_day: DateToSessionDict = collections.defaultdict(list)
 
+        for date in last_seven_days:
+            sessions_for_date = [sesh for sesh in existing_sessions if sesh.start_time.date() == date]
+
+            if sessions_for_date:
+                sessions_for_date.sort(key=lambda session: session.start_time.time())
+                sessions_grouped_by_day[date] = sessions_for_date
+
+        return sessions_grouped_by_day
         # find all sessions in the last 7 days
         #
         # Note: we care about local time, not UTC
@@ -163,8 +175,9 @@ def start(cli_ctx: CliContext, project_name: str, at: Optional[str] = None) -> N
     click.echo(f"• Started tracking '{project_name}' at {formatted_start_time}")
 
     # TODO: Add support for actually using the `--at` flag
-    if at and cli_ctx.verbose:
-        click.echo(f"  [ with flag --at of '{at}' ]")
+    # if at and cli_ctx.verbose:
+    #     click.echo(f"  [ with flag --at of '{at}' ]")
+    # TODO: delete the above lines, this has since been implemented
 
     cli_ctx.start_active_session(
         project_name,
@@ -248,7 +261,10 @@ def log(cli_ctx: CliContext):
     # make sure to also display the active session if there is one
     active_session = cli_ctx.active_session
 
+    # TODO: Change all of the `print` statements to `click.echo` calls
     print("Session Log")
+
+    curr_time = datetime.now(timezone.utc)
 
     if active_session:
         # Assume, for now, that an active session is always 'today'
@@ -256,10 +272,31 @@ def log(cli_ctx: CliContext):
         # previous day.
         start_time = time_helpers.format_timestamp(active_session.start_time)
 
-        curr_time = datetime.now(timezone.utc)
         time_diff = curr_time - active_session.start_time
         duration = time_helpers.format_time_delta(time_diff)
 
         project_name = active_session.project_name
 
-        print(f"  {start_time} - ...\t{duration}\t{project_name}")
+        print(f"  {start_time} - ...\t\t{duration}\t\t{project_name}")
+
+    yesterday = (datetime.now() - timedelta(days=1)).date()
+    for date, sessions_for_day in sessions.items():
+        date_display = date.strftime("%A, %B %d")
+        if date == yesterday:
+            date_display = "Yesterday"
+
+        print(f"{date_display}")
+        for session in sessions_for_day:
+            start_time = time_helpers.format_timestamp(session.start_time)
+            end_time = "..."
+            if session.end_time:
+                end_time = time_helpers.format_timestamp(session.end_time)
+
+            time_diff = curr_time - session.start_time
+            duration = time_helpers.format_time_delta(time_diff)
+
+            project_name = session.project_name
+
+            print(f"  {start_time} - {end_time}\t\t{duration}\t\t{project_name}")
+
+        print("")

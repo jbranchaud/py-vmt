@@ -1,5 +1,5 @@
 import dateparser
-from datetime import datetime
+from datetime import datetime, timezone
 import math
 
 
@@ -19,6 +19,8 @@ def format_time_delta(diff) -> str:
 def format_timestamp(utc_datetime: datetime) -> str:
     # H:MM[AM|PM], e.g. 6:32PM
     format = "%-I:%M%p"
+
+    assert utc_datetime.tzinfo is not None and utc_datetime.tzinfo is timezone.utc
 
     # Make sure to convert to local time (with `astimezone()`) before formatting
     # the string.

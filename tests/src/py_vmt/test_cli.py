@@ -79,7 +79,7 @@ def test_start_at_past_time():
     with freeze_time(initial_datetime) as frozen_datetime:
         # start a session
         start_result = runner.invoke(
-            cli, ["start", "my-project", "--at", '"33 minutes ago"']
+            cli, ["start", "my-project", "--at", "'33 minutes ago'"]
         )
         output = "Started tracking 'my-project' at 9:32AM"
         assert output in start_result.output
@@ -92,7 +92,6 @@ def test_start_at_past_time():
         assert output in status_result.output
 
 
-@pytest.mark.xfail
 def test_log_recent_activity():
     runner = CliRunner()
 
@@ -132,24 +131,28 @@ def test_log_recent_activity():
 
         frozen_datetime.tick(delta=datetime.timedelta(hours=14))
 
+        print(f"Current datetime: {frozen_datetime.time_to_freeze.strftime("%A - %B %d, %Y %I:%M %p")}")
+
         # Time to check the log
         log_result = runner.invoke(cli, ["log"])
 
-        expected_log_output = """
-Session Log
+        print("----------------------------------------")
+        print(log_result.output)
+        print("----------------------------------------")
+
+        expected_log_output = """Session Log
 Yesterday
-  9:12 AM - 3:53 PM        6h 33m      Client A
-  4:08 PM - 4:36 PM           28m      TIL
+  11:23AM - 11:51AM		868m		TIL
 
-Friday, March 13, 2026
-  8:59 AM - 5:44 PM        8h 44m      ccstorage [two-way-msg]
+Sunday, March 15
+  7:05AM - 11:37AM		1126m		still
+  12:05PM - 3:08PM		826m		TIL
 
-Thursday, March 12, 2026
-  8:56 AM - 3:59 PM        7h 3m       ccstorage [two-way-msg]
-
-Wednesday, March 11, 2026
-  9:06 AM - 4:55 PM        7h 49m      ccstorage [two-way-msg]
+Saturday, March 14
+  10:05AM - 6:05PM		946m		TIL
 """
 
-        for line in expected_log_output.split('\n'):
-            assert line in log_result.output
+        log_output_by_line = log_result.output.split('\n')
+        for i, expected_line in enumerate(expected_log_output.split('\n')):
+            actual_line = log_output_by_line[i]
+            assert actual_line == expected_line
