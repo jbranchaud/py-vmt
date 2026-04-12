@@ -131,17 +131,12 @@ def test_log_recent_activity():
 
         frozen_datetime.tick(delta=datetime.timedelta(hours=14))
 
-        print(f"Current datetime: {frozen_datetime.time_to_freeze.strftime("%A - %B %d, %Y %I:%M %p")}")
-
         # Time to check the log
         log_result = runner.invoke(cli, ["log"])
 
-        print("----------------------------------------")
-        print(log_result.output)
-        print("----------------------------------------")
-
         expected_log_output = """Session Log
 Yesterday
+  4:35AM - 11:08AM		1276m		Client A
   11:23AM - 11:51AM		868m		TIL
 
 Sunday, March 15

@@ -1,5 +1,5 @@
 import dateparser
-from datetime import datetime, timezone
+from datetime import datetime, timedelta
 import math
 
 
@@ -20,7 +20,9 @@ def format_timestamp(utc_datetime: datetime) -> str:
     # H:MM[AM|PM], e.g. 6:32PM
     format = "%-I:%M%p"
 
-    assert utc_datetime.tzinfo is not None and utc_datetime.tzinfo is timezone.utc
+    check = utc_datetime.tzinfo is not None and utc_datetime.utcoffset() == timedelta(0)
+    msg = f"The given datetime must have tzinfo ({utc_datetime.tzinfo}) with offset of 0 ({utc_datetime.utcoffset()})"
+    assert check, msg
 
     # Make sure to convert to local time (with `astimezone()`) before formatting
     # the string.
