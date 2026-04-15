@@ -174,11 +174,6 @@ def start(cli_ctx: CliContext, project_name: str, at: Optional[str] = None) -> N
     # • Started tracking 'visual-mode-tracking' [cli] at 11:11 AM
     click.echo(f"• Started tracking '{project_name}' at {formatted_start_time}")
 
-    # TODO: Add support for actually using the `--at` flag
-    # if at and cli_ctx.verbose:
-    #     click.echo(f"  [ with flag --at of '{at}' ]")
-    # TODO: delete the above lines, this has since been implemented
-
     cli_ctx.start_active_session(
         project_name,
         start_time,
