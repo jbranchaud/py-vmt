@@ -126,6 +126,8 @@ class CliContext:
         return [Session.hydrate(raw_sesh) for raw_sesh in self._load_raw_session_log()]
 
 
+# This decorator allows for passing the `CliContext` object
+# directly to each command handler
 pass_cli = click.make_pass_decorator(CliContext)
 
 # define top-level CLI group
@@ -149,9 +151,7 @@ def cli(ctx: click.Context, verbose: bool):
 @cli.command()
 @click.argument("project-name")
 @click.option("--at", help='Hours previous to start the timer, e.g. "2 hours ago"')
-# @click.pass_context
 @pass_cli
-# TODO: How can I add type annotations to `ctx` so that I get IDE type hints?
 def start(cli_ctx: CliContext, project_name: str, at: Optional[str] = None) -> None:
     if cli_ctx.verbose:
         msg = f"[ start cmd ctx - data_dir: {cli_ctx.data_dir}, config_dir: {cli_ctx.config_dir} ]"
