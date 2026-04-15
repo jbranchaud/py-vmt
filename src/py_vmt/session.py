@@ -8,13 +8,6 @@ class Session:
     project_name: str
     end_time: datetime | None = None
 
-    # def __init__(
-    #     self, start_time: datetime | None, project_name: str, end_time: datetime | None = None
-    # ) -> None:
-    #     self.start_time = start_time or datetime.now(timezone.utc)
-    #     self.project_name = project_name
-
-    # TODO: Add a static `start` method
     @staticmethod
     def start(project_name: str) -> "Session":
         return Session(datetime.now(timezone.utc), project_name)
