@@ -85,7 +85,7 @@ class CliContext:
             sessions_for_date = [sesh for sesh in existing_sessions if sesh.start_time.date() == date]
 
             if sessions_for_date:
-                sessions_for_date.sort(key=lambda session: session.start_time.time())
+                sessions_for_date.sort()
                 sessions_grouped_by_day[date] = sessions_for_date
 
         return sessions_grouped_by_day

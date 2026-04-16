@@ -8,6 +8,11 @@ class Session:
     project_name: str
     end_time: datetime | None = None
 
+    def __lt__(self, other):
+        if not isinstance(other, Session):
+            return NotImplemented
+        return self.start_time < other.start_time
+
     @staticmethod
     def start(project_name: str) -> "Session":
         return Session(datetime.now(timezone.utc), project_name)

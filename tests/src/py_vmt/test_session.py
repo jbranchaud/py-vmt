@@ -126,3 +126,20 @@ def test_hydrate_with_invalid_start_time():
         Session.hydrate(sesh_data)
 
     assert "Invalid isoformat string: 'abc123'" in str(exception.value)
+
+def test_list_of_sessions_is_sortable():
+    now = datetime.now()
+    sesh1 = Session(now, "TIL")
+
+    earlier = now + timedelta(minutes=-30)
+    sesh2 = Session(earlier, "Client A")
+
+    later = now + timedelta(minutes=20)
+    sesh3 = Session(later, "Alpha")
+
+    sessions = [sesh1, sesh2, sesh3]
+    sessions.sort()
+
+    assert sessions[0] == sesh2
+    assert sessions[1] == sesh1
+    assert sessions[2] == sesh3
