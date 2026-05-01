@@ -9,15 +9,18 @@ def parse_to_datetime(at: str) -> datetime:
 
 
 def format_time_delta(diff) -> str:
-    if diff.seconds < 60:
-        return f"{diff.seconds}s"
-
     minutes = math.floor(diff.seconds / 60)
     seconds = diff.seconds % 60
+
+    min_str = ""
+    if minutes > 0:
+        min_str = f"{minutes}m"
+
+    sec_str = ""
     if seconds > 0:
-        return f"{minutes}m{seconds}s"
-    else:
-        return f"{minutes}m"
+        sec_str = f"{seconds}s"
+
+    return f"{min_str}{sec_str}"
 
 
 def format_timestamp(utc_datetime: datetime) -> str:
