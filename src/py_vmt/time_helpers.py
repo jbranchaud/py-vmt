@@ -13,7 +13,11 @@ def format_time_delta(diff) -> str:
         return f"{diff.seconds}s"
 
     minutes = math.floor(diff.seconds / 60)
-    return f"{minutes}m"
+    seconds = diff.seconds % 60
+    if seconds > 0:
+        return f"{minutes}m{seconds}s"
+    else:
+        return f"{minutes}m"
 
 
 def format_timestamp(utc_datetime: datetime) -> str:
