@@ -287,7 +287,7 @@ def log(cli_ctx: CliContext):
             if session.end_time:
                 end_time = time_helpers.format_timestamp(session.end_time)
 
-            time_diff = curr_time - session.start_time
+            time_diff = (session.end_time or curr_time) - session.start_time
             duration = time_helpers.format_time_delta(time_diff)
 
             project_name = session.project_name

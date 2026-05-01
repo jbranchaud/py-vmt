@@ -9,19 +9,26 @@ def parse_to_datetime(at: str) -> datetime:
 
 
 def format_time_delta(diff) -> str:
-    minutes = math.floor(diff.seconds / 60)
-    seconds = diff.seconds % 60
+    hours, remainder = divmod(diff.seconds, 3600)
+    minutes, remainder = divmod(remainder, 60)
+    seconds = remainder
 
-    min_str = ""
-    if minutes > 0:
-        min_str = f"{minutes}m"
+    hour_str = _format_amount_with_suffix(hours, "h")
+    min_str = _format_amount_with_suffix(minutes, "m")
+    sec_str = _format_amount_with_suffix(seconds, "s")
 
-    sec_str = ""
-    if seconds > 0:
-        sec_str = f"{seconds}s"
+    if hour_str:
+        return f"{hour_str}{min_str}"
+    else:
+        return f"{min_str}{sec_str}"
 
-    return f"{min_str}{sec_str}"
 
+def _format_amount_with_suffix(amount, suffix):
+    str = ""
+    if amount > 0:
+        str = f"{amount}{suffix}"
+
+    return str
 
 def format_timestamp(utc_datetime: datetime) -> str:
     # H:MM[AM|PM], e.g. 6:32PM

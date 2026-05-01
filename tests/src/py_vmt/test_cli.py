@@ -46,7 +46,7 @@ def test_start_status_stop_flow():
 
         # stop a session
         stop_result = runner.invoke(cli, ["stop"])
-        output = "Stopped tracking 'my-project' (90m)"
+        output = "Stopped tracking 'my-project' (1h30m)"
         assert output in stop_result.output
 
 
@@ -88,7 +88,7 @@ def test_start_at_past_time():
 
         # check status
         status_result = runner.invoke(cli, ["status"])
-        output = "Tracking 'my-project' for 63m (since 9:32AM)"
+        output = "Tracking 'my-project' for 1h3m (since 9:32AM)"
         assert output in status_result.output
 
 
@@ -136,15 +136,15 @@ def test_log_recent_activity():
 
         expected_log_output = """Session Log
 Yesterday
-  4:35AM - 11:08AM		1276m		Client A
-  11:23AM - 11:51AM		868m		TIL
+  4:35AM - 11:08AM		6h33m		Client A
+  11:23AM - 11:51AM		28m		TIL
 
 Sunday, March 15
-  7:05AM - 11:37AM		1126m		still
-  12:05PM - 3:08PM		826m		TIL
+  7:05AM - 11:37AM		4h32m		still
+  12:05PM - 3:08PM		3h3m		TIL
 
 Saturday, March 14
-  10:05AM - 6:05PM		946m		TIL
+  10:05AM - 6:05PM		8h		TIL
 """
 
         log_output_by_line = log_result.output.split('\n')

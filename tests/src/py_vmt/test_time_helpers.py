@@ -17,3 +17,10 @@ def test_format_time_delta():
     # bunch of minutes and seconds
     delta = timedelta(minutes=24, seconds=8)
     assert "24m8s" == format_time_delta(delta)
+
+    # one hour exactly
+    one_hour = timedelta(hours=1)
+    assert "1h" == format_time_delta(one_hour)
+
+    # more than one hour
+    assert "1h24m" == format_time_delta(one_hour + delta)
