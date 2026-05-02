@@ -8,8 +8,10 @@ def parse_to_datetime(at: str) -> datetime:
     return dateparser.parse(at, settings=settings)
 
 
-def format_time_delta(diff) -> str:
-    hours, remainder = divmod(diff.seconds, 3600)
+def format_time_delta(diff: timedelta) -> str:
+    total_seconds = int(diff.total_seconds())
+
+    hours, remainder = divmod(total_seconds, 3600)
     minutes, remainder = divmod(remainder, 60)
     seconds = remainder
 

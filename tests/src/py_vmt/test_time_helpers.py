@@ -9,6 +9,7 @@ from py_vmt.time_helpers import format_time_delta
     (timedelta(minutes=24, seconds=8), "24m8s"),
     (timedelta(hours=1), "1h"),
     (timedelta(hours=1, minutes=24, seconds=8), "1h24m"),
+    (timedelta(seconds=87000), "24h10m")
 ])
 def test_format_time_delta(input, expected):
     assert format_time_delta(input) == expected
