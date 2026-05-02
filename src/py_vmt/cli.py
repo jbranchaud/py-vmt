@@ -256,8 +256,7 @@ def log(cli_ctx: CliContext):
     # make sure to also display the active session if there is one
     active_session = cli_ctx.active_session
 
-    # TODO: Change all of the `print` statements to `click.echo` calls
-    print("Session Log")
+    click.echo("Session Log")
 
     curr_time = datetime.now(timezone.utc)
 
@@ -272,7 +271,7 @@ def log(cli_ctx: CliContext):
 
         project_name = active_session.project_name
 
-        print(f"  {start_time} - ...\t\t{duration}\t\t{project_name}")
+        click.echo(f"  {start_time} - ...\t\t{duration}\t\t{project_name}")
 
     yesterday = (datetime.now() - timedelta(days=1)).date()
     for date, sessions_for_day in sessions.items():
@@ -280,7 +279,7 @@ def log(cli_ctx: CliContext):
         if date == yesterday:
             date_display = "Yesterday"
 
-        print(f"{date_display}")
+        click.echo(f"{date_display}")
         for session in sessions_for_day:
             start_time = time_helpers.format_timestamp(session.start_time)
             end_time = "..."
@@ -292,6 +291,6 @@ def log(cli_ctx: CliContext):
 
             project_name = session.project_name
 
-            print(f"  {start_time} - {end_time}\t\t{duration}\t\t{project_name}")
+            click.echo(f"  {start_time} - {end_time}\t\t{duration}\t\t{project_name}")
 
-        print("")
+        click.echo("")
