@@ -100,12 +100,12 @@ def test_start_at_in_future():
     with freeze_time(initial_datetime):
         # start a session
         start_result = runner.invoke(
-            cli, ["start", "my-project", "--at", "'in 23 minutes'"]
+            cli, ["start", "my-project", "--at", "'in 23 minutes'"], prog_name="vmt"
         )
 
         output_lines = [
-          "Usage: cli start [OPTIONS] PROJECT_NAME",
-          "Try 'cli start --help' for help",
+          "Usage: vmt start [OPTIONS] PROJECT_NAME",
+          "Try 'vmt start --help' for help",
           "Error: Invalid value for '--at': must be a relative time in the past"
         ]
         for output in output_lines:
