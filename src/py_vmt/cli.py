@@ -130,7 +130,7 @@ class CliContext:
 pass_cli = click.make_pass_decorator(CliContext)
 
 # define top-level CLI group
-@click.group()
+@click.group(name="vmt")
 @click.option(
     "--verbose",
     "-v",

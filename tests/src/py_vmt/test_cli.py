@@ -100,7 +100,7 @@ def test_start_at_in_future():
     with freeze_time(initial_datetime):
         # start a session
         start_result = runner.invoke(
-            cli, ["start", "my-project", "--at", "'in 23 minutes'"], prog_name="vmt"
+            cli, ["start", "my-project", "--at", "'in 23 minutes'"]
         )
 
         output_lines = [
