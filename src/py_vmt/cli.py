@@ -146,10 +146,23 @@ def cli(ctx: click.Context, verbose: bool):
         click.echo("[ running `vmt` in verbose mode ]")
 
 
+def validate_past_time(_ctx, _param, value):
+    if value == None:
+        return None
+
+    start_at = time_helpers.parse_to_datetime(value)
+    # TODO: handle special BadParamter case when value cannot be parsed to a valid datetime
+    now = datetime.now(timezone.utc)
+
+    if start_at > now:
+        raise click.BadParameter("must be a relative time in the past")
+
+    return value
+
 # define `start` subcommand
 @cli.command()
 @click.argument("project-name")
-@click.option("--at", help='Hours previous to start the timer, e.g. "2 hours ago"')
+@click.option("--at", help='Relative time in past to start the time, e.g. "2 hours ago", "33 minutes ago"', callback=validate_past_time)
 @pass_cli
 def start(cli_ctx: CliContext, project_name: str, at: Optional[str] = None) -> None:
     if cli_ctx.verbose:
@@ -164,8 +177,6 @@ def start(cli_ctx: CliContext, project_name: str, at: Optional[str] = None) -> N
     start_at = None
     if at:
         start_at = time_helpers.parse_to_datetime(at)
-
-    # TODO: abort if `start_at` isn't earlier than now
 
     start_time = start_at or datetime.now(timezone.utc)
     formatted_start_time = time_helpers.format_timestamp(start_time)
