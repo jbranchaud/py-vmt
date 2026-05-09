@@ -7,7 +7,6 @@ import click
 from typing import Optional
 from py_vmt import time_helpers
 from py_vmt.session import Session
-from dataclasses import dataclass
 
 
 class CliContext:
