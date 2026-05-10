@@ -111,6 +111,26 @@ def test_start_at_in_future():
         for output in output_lines:
             assert output in start_result.output
 
+def test_start_at_with_bad_value():
+    runner = CliRunner()
+
+    initial_datetime = datetime.datetime(
+        2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
+    )
+    with freeze_time(initial_datetime):
+        # start a session
+        start_result = runner.invoke(
+            cli, ["start", "my-project", "--at", "'🕑'"]
+        )
+
+        output_lines = [
+          "Usage: vmt start [OPTIONS] PROJECT_NAME",
+          "Try 'vmt start --help' for help",
+          "Error: Invalid value for '--at': must be a relative time in the past"
+        ]
+        for output in output_lines:
+            assert output in start_result.output
+
 
 def test_log_recent_activity():
     runner = CliRunner()

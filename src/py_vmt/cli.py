@@ -153,9 +153,8 @@ def validate_past_time(_ctx, _param, value: str | None) -> datetime:
         return now
 
     start_at = time_helpers.parse_to_datetime(value)
-    # TODO: handle special BadParamter case when value cannot be parsed to a valid datetime
 
-    if start_at > now:
+    if start_at == None or start_at > now:
         raise click.BadParameter("must be a relative time in the past")
 
     return start_at
