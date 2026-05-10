@@ -146,25 +146,26 @@ def cli(ctx: click.Context, verbose: bool):
         click.echo("[ running `vmt` in verbose mode ]")
 
 
-def validate_past_time(_ctx, _param, value):
+def validate_past_time(_ctx, _param, value: str | None) -> datetime:
+    now = datetime.now(timezone.utc)
+
     if value == None:
-        return None
+        return now
 
     start_at = time_helpers.parse_to_datetime(value)
     # TODO: handle special BadParamter case when value cannot be parsed to a valid datetime
-    now = datetime.now(timezone.utc)
 
     if start_at > now:
         raise click.BadParameter("must be a relative time in the past")
 
-    return value
+    return start_at
 
 # define `start` subcommand
 @cli.command()
 @click.argument("project-name")
 @click.option("--at", help='Relative time in past to start the time, e.g. "2 hours ago", "33 minutes ago"', callback=validate_past_time)
 @pass_cli
-def start(cli_ctx: CliContext, project_name: str, at: Optional[str] = None) -> None:
+def start(cli_ctx: CliContext, project_name: str, at: datetime) -> None:
     if cli_ctx.verbose:
         msg = f"[ start cmd ctx - data_dir: {cli_ctx.data_dir}, config_dir: {cli_ctx.config_dir} ]"
         click.echo(msg)
@@ -174,19 +175,14 @@ def start(cli_ctx: CliContext, project_name: str, at: Optional[str] = None) -> N
         click.echo(msg)
         click.get_current_context().abort()
 
-    start_at = None
-    if at:
-        start_at = time_helpers.parse_to_datetime(at)
-
-    start_time = start_at or datetime.now(timezone.utc)
-    formatted_start_time = time_helpers.format_timestamp(start_time)
+    formatted_start_time = time_helpers.format_timestamp(at)
 
     # • Started tracking 'visual-mode-tracking' [cli] at 11:11 AM
     click.echo(f"• Started tracking '{project_name}' at {formatted_start_time}")
 
     cli_ctx.start_active_session(
         project_name,
-        start_time,
+        at,
     )
 
 
