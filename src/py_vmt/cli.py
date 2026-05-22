@@ -232,11 +232,6 @@ def stop(cli_ctx: CliContext, at: datetime) -> None:
         click.echo(msg)
         click.get_current_context().abort()
 
-    # TODO: add support for `--at` flag option using
-    # `time_helpers.parse_to_datetime`
-    # And then ensure that the time value is greater than
-    # `latest_sesh['start_time']`
-
     stopped_at = at
     latest_sesh = cli_ctx.stop_active_session(stopped_at)
 
