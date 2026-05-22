@@ -49,7 +49,7 @@ class CliContext:
         ), "An active session is required in order to stop an active session"
 
         session = self.active_session
-        session.stop()
+        session.stop(at)
 
         # log current session to "database"
         self._write_event_to_session_log(session)
@@ -152,12 +152,12 @@ def validate_past_time(_ctx, _param, value: str | None) -> datetime:
     if value == None:
         return now
 
-    start_at = time_helpers.parse_to_datetime(value)
+    past_time = time_helpers.parse_to_datetime(value)
 
-    if start_at == None or start_at > now:
+    if past_time == None or past_time > now:
         raise click.BadParameter("must be a relative time in the past")
 
-    return start_at
+    return past_time
 
 # define `start` subcommand
 @cli.command()
@@ -207,9 +207,10 @@ def status(cli_ctx: CliContext) -> None:
 
 # define `stop` subcommand
 @cli.command()
-@click.option("--at", help='Hours previous to end the timer, e.g. "2 hours ago"')
+@click.option("--at", help='Hours previous to end the timer, e.g. "2 hours ago"', callback=validate_past_time)
+# TODO: I'd like a `--round` flag that will round to the nearest `15` minutes
 @pass_cli
-def stop(cli_ctx: CliContext, at: Optional[str] = None):
+def stop(cli_ctx: CliContext, at: datetime) -> None:
     if not cli_ctx.active_session:
         msg = "Error: No active session being tracked. Start a session first."
         click.echo(msg)
@@ -220,7 +221,7 @@ def stop(cli_ctx: CliContext, at: Optional[str] = None):
     # And then ensure that the time value is greater than
     # `latest_sesh['start_time']`
 
-    stopped_at = datetime.now(timezone.utc)
+    stopped_at = at
     latest_sesh = cli_ctx.stop_active_session(stopped_at)
 
     assert latest_sesh.end_time, "Expected this session to have an 'end_time' set"

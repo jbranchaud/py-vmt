@@ -132,6 +132,102 @@ def test_start_at_with_bad_value():
             assert output in start_result.output
 
 
+def test_stop_at_earlier_time():
+    runner = CliRunner()
+
+    initial_datetime = datetime.datetime(
+        2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
+    )
+    with freeze_time(initial_datetime) as frozen_datetime:
+        # start a session
+        start_result = runner.invoke(cli, ["start", "my-project"])
+        output = "Started tracking 'my-project' at 10:05AM"
+        assert output in start_result.output
+
+        frozen_datetime.tick(delta=datetime.timedelta(minutes=45))
+
+        # stop a session
+        stop_result = runner.invoke(cli, ["stop", "--at", "'15 minutes ago'"])
+        output = "Stopped tracking 'my-project' (30m)"
+        assert output in stop_result.output
+
+
+def test_stop_at_in_future():
+    runner = CliRunner()
+
+    initial_datetime = datetime.datetime(
+        2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
+    )
+    with freeze_time(initial_datetime) as frozen_datetime:
+        # start a session
+        start_result = runner.invoke(cli, ["start", "my-project"])
+        output = "Started tracking 'my-project' at 10:05AM"
+        assert output in start_result.output
+
+        frozen_datetime.tick(delta=datetime.timedelta(minutes=30))
+
+        stop_result = runner.invoke(cli, ["stop", "--at", "'in 10 minutes'"])
+
+        output_lines = [
+          "Usage: vmt stop [OPTIONS]",
+          "Try 'vmt stop --help' for help",
+          "Error: Invalid value for '--at': must be a relative time in the past"
+        ]
+        for output in output_lines:
+            assert output in stop_result.output
+
+
+def test_stop_at_after_start():
+    runner = CliRunner()
+
+    initial_datetime = datetime.datetime(
+        2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
+    )
+    with freeze_time(initial_datetime) as frozen_datetime:
+        # start a session
+        start_result = runner.invoke(cli, ["start", "my-project"])
+        output = "Started tracking 'my-project' at 10:05AM"
+        assert output in start_result.output
+
+        frozen_datetime.tick(delta=datetime.timedelta(minutes=10))
+
+        stop_result = runner.invoke(cli, ["stop", "--at", "'30 minutes ago'"])
+
+        output_lines = [
+          "Usage: vmt stop [OPTIONS]",
+          "Try 'vmt stop --help' for help",
+          "Error: Invalid value for '--at': stop time must be after start time"
+        ]
+        for output in output_lines:
+            assert output in stop_result.output
+
+
+def test_stop_at_with_bad_value():
+    runner = CliRunner()
+
+    initial_datetime = datetime.datetime(
+        2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
+    )
+    with freeze_time(initial_datetime) as frozen_datetime:
+        # start a session
+        start_result = runner.invoke(
+            cli, ["start", "my-project"]
+        )
+
+        frozen_datetime.tick(delta=datetime.timedelta(minutes=30))
+
+        # stop with invalid --at value
+        stop_result = runner.invoke(cli, ["stop", "--at", "'🕑'"])
+
+        output_lines = [
+          "Usage: vmt stop [OPTIONS]",
+          "Try 'vmt stop --help' for help",
+          "Error: Invalid value for '--at': must be a relative time in the past"
+        ]
+        for output in output_lines:
+            assert output in stop_result.output
+
+
 def test_log_recent_activity():
     runner = CliRunner()
 

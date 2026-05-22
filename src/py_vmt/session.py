@@ -17,8 +17,8 @@ class Session:
     def start(project_name: str) -> "Session":
         return Session(datetime.now(timezone.utc), project_name)
 
-    def stop(self):
-        self.end_time = datetime.now(timezone.utc)
+    def stop(self, at: datetime | None = None):
+        self.end_time = at or datetime.now(timezone.utc)
 
     @staticmethod
     def hydrate(data: dict) -> "Session":
