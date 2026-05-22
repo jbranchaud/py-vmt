@@ -70,6 +70,19 @@ def test_start_cancel_flow():
         assert output in cancel_result.output
 
 
+def test_cancel_without_active_session():
+    runner = CliRunner()
+
+    initial_datetime = datetime.datetime(
+        2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
+    )
+    with freeze_time(initial_datetime) as frozen_datetime:
+        # cancel session without one started
+        cancel_result = runner.invoke(cli, ["cancel"])
+        output = "Error: No active session to be cancelled."
+        assert output in cancel_result.output
+
+
 def test_start_at_past_time():
     runner = CliRunner()
 
