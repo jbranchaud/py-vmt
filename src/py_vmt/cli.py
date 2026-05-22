@@ -205,9 +205,25 @@ def status(cli_ctx: CliContext) -> None:
         # TODO: add support for listing last active session
 
 
+def validate_stop_at(ctx, _param, value: str | None) -> datetime:
+    now = datetime.now(timezone.utc)
+
+    if value == None:
+        return now
+
+    past_time = time_helpers.parse_to_datetime(value)
+
+    if past_time == None or past_time > now:
+        raise click.BadParameter("must be a relative time in the past")
+
+    if past_time < ctx.obj.active_session.start_time:
+        raise click.BadParameter("stop time must be after start time")
+
+    return past_time
+
 # define `stop` subcommand
 @cli.command()
-@click.option("--at", help='Hours previous to end the timer, e.g. "2 hours ago"', callback=validate_past_time)
+@click.option("--at", help='Hours previous to end the timer, e.g. "2 hours ago"', callback=validate_stop_at)
 # TODO: I'd like a `--round` flag that will round to the nearest `15` minutes
 @pass_cli
 def stop(cli_ctx: CliContext, at: datetime) -> None:
