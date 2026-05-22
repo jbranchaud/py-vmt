@@ -146,7 +146,7 @@ def cli(ctx: click.Context, verbose: bool):
         click.echo("[ running `vmt` in verbose mode ]")
 
 
-def validate_past_time(_ctx, _param, value: str | None) -> datetime:
+def validate_start_at(_ctx, _param, value: str | None) -> datetime:
     now = datetime.now(timezone.utc)
 
     if value == None:
@@ -162,7 +162,7 @@ def validate_past_time(_ctx, _param, value: str | None) -> datetime:
 # define `start` subcommand
 @cli.command()
 @click.argument("project-name")
-@click.option("--at", help='Relative time in past to start the time, e.g. "2 hours ago", "33 minutes ago"', callback=validate_past_time)
+@click.option("--at", help='Relative time in past to start the time, e.g. "2 hours ago", "33 minutes ago"', callback=validate_start_at)
 @pass_cli
 def start(cli_ctx: CliContext, project_name: str, at: datetime) -> None:
     if cli_ctx.verbose:
