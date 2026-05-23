@@ -221,17 +221,19 @@ def validate_stop_at(ctx, _param, value: str | None) -> datetime:
 
     return past_time
 
+class RequireActiveSessionCommand(click.Command):
+    def parse_args(self, ctx, args):
+        if ctx.obj.active_session is None:
+            raise click.UsageError("No active session being tracked. Start a session first.")
+
+        return super().parse_args(ctx, args)
+
 # define `stop` subcommand
-@cli.command()
+@cli.command(cls=RequireActiveSessionCommand)
 @click.option("--at", help='Hours previous to end the timer, e.g. "2 hours ago"', callback=validate_stop_at)
 # TODO: I'd like a `--round` flag that will round to the nearest `15` minutes
 @pass_cli
 def stop(cli_ctx: CliContext, at: datetime) -> None:
-    if not cli_ctx.active_session:
-        msg = "Error: No active session being tracked. Start a session first."
-        click.echo(msg)
-        click.get_current_context().abort()
-
     stopped_at = at
     latest_sesh = cli_ctx.stop_active_session(stopped_at)
 
@@ -245,14 +247,9 @@ def stop(cli_ctx: CliContext, at: datetime) -> None:
 
 
 # define `cancel` subcommand
-@cli.command()
+@cli.command(cls=RequireActiveSessionCommand)
 @pass_cli
 def cancel(cli_ctx: CliContext):
-    if not cli_ctx.active_session:
-        msg = "Error: No active session to be cancelled."
-        click.echo(msg)
-        click.get_current_context().abort()
-
     cancelled_sesh = cli_ctx.cancel_active_session()
     project_name = cancelled_sesh.project_name
 

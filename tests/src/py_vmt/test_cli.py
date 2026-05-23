@@ -79,7 +79,7 @@ def test_cancel_without_active_session():
     with freeze_time(initial_datetime) as frozen_datetime:
         # cancel session without one started
         cancel_result = runner.invoke(cli, ["cancel"])
-        output = "Error: No active session to be cancelled."
+        output = "Error: No active session being tracked. Start a session first."
         assert output in cancel_result.output
 
 
@@ -164,6 +164,18 @@ def test_stop_at_earlier_time():
         output = "Stopped tracking 'my-project' (30m)"
         assert output in stop_result.output
 
+
+def test_stop_with_no_active_session():
+    runner = CliRunner()
+
+    initial_datetime = datetime.datetime(
+        2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
+    )
+    with freeze_time(initial_datetime) as frozen_datetime:
+        # stop with no active session
+        stop_result = runner.invoke(cli, ["stop", "--at", "'15 minutes ago'"])
+        output = "Error: No active session being tracked. Start a session first."
+        assert output in stop_result.output
 
 def test_stop_at_in_future():
     runner = CliRunner()
