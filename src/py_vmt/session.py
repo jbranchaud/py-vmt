@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 
 @dataclass
@@ -19,6 +19,11 @@ class Session:
 
     def stop(self, at: datetime | None = None):
         self.end_time = at or datetime.now(timezone.utc)
+
+    def duration(self) -> timedelta:
+        lhs_time = self.end_time or datetime.now(timezone.utc)
+
+        return lhs_time - self.start_time
 
     @staticmethod
     def hydrate(data: dict) -> "Session":

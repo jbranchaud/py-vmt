@@ -239,9 +239,7 @@ def stop(cli_ctx: CliContext, at: datetime) -> None:
 
     assert latest_sesh.end_time, "Expected this session to have an 'end_time' set"
 
-    # TODO: move this to a `session` dataclass method
-    duration = latest_sesh.end_time - latest_sesh.start_time
-    elapsed_time = time_helpers.format_time_delta(duration)
+    elapsed_time = time_helpers.format_time_delta(latest_sesh.duration())
 
     click.echo(f"• Stopped tracking '{latest_sesh.project_name}' ({elapsed_time})")
 
@@ -255,8 +253,7 @@ def cancel(cli_ctx: CliContext):
 
     assert cancelled_sesh.end_time, "Expected this session to have an 'end_time' set"
 
-    duration = cancelled_sesh.end_time - cancelled_sesh.start_time
-    elapsed_time = time_helpers.format_time_delta(duration)
+    elapsed_time = time_helpers.format_time_delta(cancelled_sesh.duration())
     click.echo(f"• Cancelled session for '{project_name}' ({elapsed_time})")
 
 

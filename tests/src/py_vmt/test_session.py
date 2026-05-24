@@ -47,6 +47,32 @@ def test_start_then_stop():
 
         assert sesh.end_time == (initial_datetime + timedelta(hours=3))
 
+def test_duration():
+    initial_datetime = datetime(
+        2026, 3, 14, 15, 5, 11, 0, timezone.utc
+    )
+    with freeze_time(initial_datetime) as frozen_datetime:
+        sesh = Session.start("TIL")
+
+        frozen_datetime.tick(delta=timedelta(hours=3, minutes=4, seconds=5))
+
+        assert sesh.duration().total_seconds() == 11045
+
+def test_duration_after_stop():
+    initial_datetime = datetime(
+        2026, 3, 14, 15, 5, 11, 0, timezone.utc
+    )
+    with freeze_time(initial_datetime) as frozen_datetime:
+        sesh = Session.start("TIL")
+
+        frozen_datetime.tick(delta=timedelta(hours=3, minutes=4, seconds=5))
+
+        sesh.stop()
+
+        frozen_datetime.tick(delta=timedelta(minutes=5))
+
+        assert sesh.duration().total_seconds() == 11045
+
 def test_marshal():
     initial_datetime = datetime(
         2026, 3, 14, 15, 5, 11, 0, timezone.utc
