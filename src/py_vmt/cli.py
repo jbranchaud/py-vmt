@@ -269,16 +269,13 @@ def log(cli_ctx: CliContext):
 
     click.echo("Session Log")
 
-    curr_time = datetime.now(timezone.utc)
-
     if active_session:
         # Assume, for now, that an active session is always 'today'
         # Later I'll have to account for a session that started the
         # previous day.
         start_time = time_helpers.format_timestamp(active_session.start_time)
 
-        time_diff = curr_time - active_session.start_time
-        duration = time_helpers.format_time_delta(time_diff)
+        duration = time_helpers.format_time_delta(active_session.duration())
 
         project_name = active_session.project_name
 
@@ -297,11 +294,10 @@ def log(cli_ctx: CliContext):
             if session.end_time:
                 end_time = time_helpers.format_timestamp(session.end_time)
 
-            time_diff = (session.end_time or curr_time) - session.start_time
-            duration = time_helpers.format_time_delta(time_diff)
+            elapsed_time = time_helpers.format_time_delta(session.duration())
 
             project_name = session.project_name
 
-            click.echo(f"  {start_time} - {end_time}\t\t{duration}\t\t{project_name}")
+            click.echo(f"  {start_time} - {end_time}\t\t{elapsed_time}\t\t{project_name}")
 
         click.echo("")
