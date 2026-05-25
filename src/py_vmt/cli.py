@@ -43,13 +43,13 @@ class CliContext:
         new_session = Session(start_time, project_name)
         self.active_session_file.write_text(json.dumps(new_session.marshal()))
 
-    def stop_active_session(self, at: datetime) -> Session:
+    def stop_active_session(self, at: datetime, round: bool = False) -> Session:
         assert (
             self.active_session
         ), "An active session is required in order to stop an active session"
 
         session = self.active_session
-        session.stop(at)
+        session.stop(at, round)
 
         # log current session to "database"
         self._write_event_to_session_log(session)
@@ -231,11 +231,11 @@ class RequireActiveSessionCommand(click.Command):
 # define `stop` subcommand
 @cli.command(cls=RequireActiveSessionCommand)
 @click.option("--at", help='Hours previous to end the timer, e.g. "2 hours ago"', callback=validate_stop_at)
-# TODO: I'd like a `--round` flag that will round to the nearest `15` minutes
+@click.option("--round", help='Round the stop time to the nearest 15 minute interval', is_flag=True)
 @pass_cli
-def stop(cli_ctx: CliContext, at: datetime) -> None:
+def stop(cli_ctx: CliContext, at: datetime, round: bool) -> None:
     stopped_at = at
-    latest_sesh = cli_ctx.stop_active_session(stopped_at)
+    latest_sesh = cli_ctx.stop_active_session(stopped_at, round)
 
     assert latest_sesh.end_time, "Expected this session to have an 'end_time' set"
 

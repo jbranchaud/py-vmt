@@ -8,6 +8,19 @@ def parse_to_datetime(at: str) -> datetime:
     return dateparser.parse(at, settings=settings)
 
 
+def find_nearest_timestamp_interval(start_time: datetime, end_time: datetime, interval: timedelta) -> datetime:
+    diff = end_time - start_time
+    rounding_point = interval.seconds // 2
+    intervals, remainder = divmod(diff.seconds, interval.seconds)
+
+    if remainder == 0:
+        return end_time
+
+    if remainder <= rounding_point:
+        return start_time + (intervals * interval)
+    else:
+        return start_time + ((intervals + 1) * interval)
+
 def format_time_delta(diff: timedelta) -> str:
     total_seconds = int(diff.total_seconds())
 

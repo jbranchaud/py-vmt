@@ -252,6 +252,34 @@ def test_stop_at_with_bad_value():
         for output in output_lines:
             assert output in stop_result.output
 
+@pytest.mark.parametrize("tick_amount,duration", [
+    (datetime.timedelta(minutes=52, seconds=31), "1h"),
+    (datetime.timedelta(minutes=52, seconds=30), "45m"),
+    (datetime.timedelta(minutes=45), "45m"),
+    (datetime.timedelta(minutes=46), "45m"),
+    (datetime.timedelta(minutes=44), "45m"),
+    (datetime.timedelta(minutes=60), "1h"),
+    (datetime.timedelta(minutes=61), "1h"),
+    (datetime.timedelta(minutes=74), "1h15m"),
+])
+def test_stop_with_round_flag(tick_amount, duration):
+    runner = CliRunner()
+
+    initial_datetime = datetime.datetime(
+        2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
+    )
+    with freeze_time(initial_datetime) as frozen_datetime:
+        # start a session
+        start_result = runner.invoke(cli, ["start", "my-project"])
+        output = "Started tracking 'my-project' at 10:05AM"
+        assert output in start_result.output
+
+        frozen_datetime.tick(delta=tick_amount)
+
+        # stop a session
+        stop_result = runner.invoke(cli, ["stop", "--round"])
+        output = f"Stopped tracking 'my-project' ({duration})"
+        assert output in stop_result.output
 
 def test_log_recent_activity():
     runner = CliRunner()
