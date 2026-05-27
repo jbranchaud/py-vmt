@@ -281,6 +281,27 @@ def test_stop_with_round_flag(tick_amount, duration):
         output = f"Stopped tracking 'my-project' ({duration})"
         assert output in stop_result.output
 
+
+def test_stop_with_at_and_round_flags():
+    runner = CliRunner()
+
+    initial_datetime = datetime.datetime(
+        2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
+    )
+    with freeze_time(initial_datetime) as frozen_datetime:
+        # start a session
+        start_result = runner.invoke(cli, ["start", "my-project"])
+        output = "Started tracking 'my-project' at 10:05AM"
+        assert output in start_result.output
+
+        frozen_datetime.tick(delta=datetime.timedelta(minutes=55))
+
+        # stop a session
+        stop_result = runner.invoke(cli, ["stop", "--round", "--at", "'10 minutes ago'"])
+        output = f"Stopped tracking 'my-project' (45m)"
+        assert output in stop_result.output
+
+
 def test_log_recent_activity():
     runner = CliRunner()
 
