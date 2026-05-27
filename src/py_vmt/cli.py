@@ -289,10 +289,11 @@ def log(cli_ctx: CliContext):
 
         click.echo(f"{date_display}")
         for session in sessions_for_day:
+            if session.end_time is None:
+                continue
+
             start_time = time_helpers.format_timestamp(session.start_time)
-            end_time = "..."
-            if session.end_time:
-                end_time = time_helpers.format_timestamp(session.end_time)
+            end_time = time_helpers.format_timestamp(session.end_time)
 
             elapsed_time = time_helpers.format_time_delta(session.duration())
 
