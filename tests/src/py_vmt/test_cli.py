@@ -49,6 +49,15 @@ def test_start_status_stop_flow():
         output = "Stopped tracking 'my-project' (1h30m)"
         assert output in stop_result.output
 
+        # status with recent seciont, but no active session
+        status_result = runner.invoke(cli, ["status"])
+        output_lines = [
+            "• Not tracking",
+            "Last: 'my-project' (1h30m) at 10:05AM"
+        ]
+        for output in output_lines:
+            assert output in status_result.output
+
 
 def test_start_cancel_flow():
     runner = CliRunner()

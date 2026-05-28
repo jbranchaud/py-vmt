@@ -102,6 +102,21 @@ class CliContext:
         # for sesh in existing_sessions:
         #     sesh["start_time"]
 
+    def load_most_recent_session(self) -> Session | None:
+        sessions_by_date = self.load_latest_sessions()
+
+        if not sessions_by_date:
+            return None
+
+        latest_date = next(iter(sessions_by_date))
+        if latest_date:
+            sessions = sessions_by_date[latest_date]
+
+            if sessions:
+                return sessions[-1]
+
+        return None
+
     def _wipe_active_session_file(self) -> None:
         empty_json = "{}"
         self.active_session_file.write_text(empty_json)
@@ -199,9 +214,18 @@ def status(cli_ctx: CliContext) -> None:
         msg = f"• Tracking '{sesh.project_name}' for {elapsed_time} (since {started_at})"
         click.echo(msg)
     else:
+        # read in most recent session
+        latest_sesh = cli_ctx.load_most_recent_session()
+
         # • Not tracking
-        # Last: 'ccstorage' (8h 45m) at 8:37 AM
+        # Last: 'my-project' (1h30m) at 8:37AM
         click.echo("• Not tracking")
+        if latest_sesh:
+            project_name = latest_sesh.project_name
+            elapsed_time = time_helpers.format_time_delta(latest_sesh.duration())
+            started_at = time_helpers.format_timestamp(latest_sesh.start_time)
+
+            click.echo(f"Last: '{project_name}' ({elapsed_time}) at {started_at}")
         # TODO: add support for listing last active session
 
 
