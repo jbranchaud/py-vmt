@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 from platformdirs import user_data_dir, user_config_dir
 import click
-from typing import Optional
 from py_vmt import time_helpers
 from py_vmt.session import Session
 
@@ -37,7 +36,6 @@ class CliContext:
             session_data = json.loads(self.active_session_file.read_text()) or {}
             if "project_name" in session_data:
                 self.active_session = Session.hydrate(session_data)
-                # CliContext.hydrate_session_data(session_data)
 
     def start_active_session(self, project_name: str, start_time: datetime) -> None:
         new_session = Session(start_time, project_name)
@@ -226,7 +224,6 @@ def status(cli_ctx: CliContext) -> None:
             started_at = time_helpers.format_timestamp(latest_sesh.start_time)
 
             click.echo(f"Last: '{project_name}' ({elapsed_time}) at {started_at}")
-        # TODO: add support for listing last active session
 
 
 def validate_stop_at(ctx, _param, value: str | None) -> datetime:
