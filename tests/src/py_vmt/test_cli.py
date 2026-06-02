@@ -2,7 +2,7 @@ from click.testing import CliRunner
 import datetime
 from freezegun import freeze_time
 import pytest
-from py_vmt.cli import cli, CliContext
+from py_vmt.cli import cli, CliContext, JsonRepository
 
 
 # auto fixture for all test cases that monkeypatches the platform dirs to a tmp
@@ -15,6 +15,8 @@ def use_tmp_platform_dirs(tmp_path, monkeypatch):
     config_dir.mkdir()
     monkeypatch.setattr(CliContext, "get_data_dir", staticmethod(lambda: data_dir))
     monkeypatch.setattr(CliContext, "get_config_dir", staticmethod(lambda: config_dir))
+    monkeypatch.setattr(JsonRepository, "get_data_dir", staticmethod(lambda: data_dir))
+    monkeypatch.setattr(JsonRepository, "get_config_dir", staticmethod(lambda: config_dir))
 
 
 def test_no_status():
