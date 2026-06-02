@@ -30,6 +30,28 @@ class JsonRepository:
     def write_active_session(self, session: Session) -> None:
         self.active_session_file.write_text(json.dumps(session.marshal()))
 
+    def write_event_to_session_log(self, session: Session) -> None:
+        existing_sessions = self.load_raw_session_log()
+
+        writeable_session = session.marshal()
+        existing_sessions.append(writeable_session)
+
+        self.session_log_file.write_text(json.dumps(existing_sessions))
+
+    def load_raw_session_log(self) -> list:
+        if self.session_log_file.exists():
+            return json.loads(self.session_log_file.read_text())
+
+        return []
+
+    def load_session_log(self) -> list[Session]:
+        return [Session.hydrate(raw_sesh) for raw_sesh in self.load_raw_session_log()]
+
+    def wipe_active_session_file(self) -> None:
+        empty_json = "{}"
+        self.active_session_file.write_text(empty_json)
+        self.active_session = None
+
     @staticmethod
     def get_data_dir() -> Path:
         path = Path(user_data_dir("vmt"))
@@ -46,25 +68,9 @@ class JsonRepository:
 class CliContext:
     def __init__(self, verbose: bool) -> None:
         self.verbose: bool = verbose
-        self.data_dir: Path = CliContext.get_data_dir()
-        self.config_dir: Path = CliContext.get_config_dir()
-        self.active_session_file: Path = self.data_dir / "active_session.json"
-        self.session_log_file: Path = self.data_dir / "session_log.json"
         self.active_session: Session | None = None
         self.repo = JsonRepository()
         self.active_session = self.repo.load_active_session()
-
-    @staticmethod
-    def get_data_dir() -> Path:
-        path = Path(user_data_dir("vmt"))
-        path.mkdir(parents=True, exist_ok=True)
-        return path
-
-    @staticmethod
-    def get_config_dir() -> Path:
-        path = Path(user_config_dir("vmt"))
-        path.mkdir(parents=True, exist_ok=True)
-        return path
 
     def start_active_session(self, project_name: str, start_time: datetime) -> None:
         new_session = Session(start_time, project_name)
@@ -79,10 +85,10 @@ class CliContext:
         session.stop(at, round)
 
         # log current session to "database"
-        self._write_event_to_session_log(session)
+        self.repo.write_event_to_session_log(session)
 
         # clear out active session file
-        self._wipe_active_session_file()
+        self.repo.wipe_active_session_file()
 
         return session
 
@@ -94,12 +100,12 @@ class CliContext:
         session = self.active_session
         session.stop()
 
-        self._wipe_active_session_file()
+        self.repo.wipe_active_session_file()
 
         return session
 
     def load_latest_sessions(self) -> DateToSessionDict:
-        existing_sessions = self._load_session_log()
+        existing_sessions = self.repo.load_session_log()
 
         days_ago_list = [timedelta(days=neg_index) for neg_index in range(0, -7, -1)]
         last_seven_days = [
@@ -148,28 +154,6 @@ class CliContext:
 
         return None
 
-    def _wipe_active_session_file(self) -> None:
-        empty_json = "{}"
-        self.active_session_file.write_text(empty_json)
-        self.active_session = None
-
-    def _write_event_to_session_log(self, session: Session) -> None:
-        existing_sessions = self._load_raw_session_log()
-
-        writeable_session = session.marshal()
-        existing_sessions.append(writeable_session)
-
-        self.session_log_file.write_text(json.dumps(existing_sessions))
-
-    def _load_raw_session_log(self) -> list:
-        if self.session_log_file.exists():
-            return json.loads(self.session_log_file.read_text())
-
-        return []
-
-    def _load_session_log(self) -> list[Session]:
-        return [Session.hydrate(raw_sesh) for raw_sesh in self._load_raw_session_log()]
-
 
 # This decorator allows for passing the `CliContext` object
 # directly to each command handler
@@ -217,10 +201,6 @@ def validate_start_at(_ctx, _param, value: str | None) -> datetime:
 )
 @pass_cli
 def start(cli_ctx: CliContext, project_name: str, at: datetime) -> None:
-    if cli_ctx.verbose:
-        msg = f"[ start cmd ctx - data_dir: {cli_ctx.data_dir}, config_dir: {cli_ctx.config_dir} ]"
-        click.echo(msg)
-
     if cli_ctx.active_session:
         msg = f"Error: already tracking '{cli_ctx.active_session.project_name}'. Stop the current session first."
         click.echo(msg)
