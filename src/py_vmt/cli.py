@@ -11,15 +11,24 @@ from py_vmt.session import Session
 type DateToSessionDict = collections.defaultdict[date, list[Session]]
 
 
-class CliContext:
-    def __init__(self, verbose: bool) -> None:
-        self.verbose: bool = verbose
-        self.data_dir: Path = CliContext.get_data_dir()
-        self.config_dir: Path = CliContext.get_config_dir()
+class JsonRepository:
+    def __init__(self) -> None:
+        self.data_dir: Path = JsonRepository.get_data_dir()
+        self.config_dir: Path = JsonRepository.get_config_dir()
         self.active_session_file: Path = self.data_dir / "active_session.json"
         self.session_log_file: Path = self.data_dir / "session_log.json"
-        self.active_session: Session | None = None
-        self.load_active_session()
+
+    def load_active_session(self) -> Session | None:
+        if self.active_session_file.exists():
+            # TODO: good place to use Pydantic eventually
+            session_data = json.loads(self.active_session_file.read_text()) or {}
+            if "project_name" in session_data:
+                return Session.hydrate(session_data)
+
+        return None
+
+    def write_active_session(self, session: Session) -> None:
+        self.active_session_file.write_text(json.dumps(session.marshal()))
 
     @staticmethod
     def get_data_dir() -> Path:
@@ -33,16 +42,33 @@ class CliContext:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def load_active_session(self) -> None:
-        if self.active_session_file.exists():
-            # TODO: good place to use Pydantic eventually
-            session_data = json.loads(self.active_session_file.read_text()) or {}
-            if "project_name" in session_data:
-                self.active_session = Session.hydrate(session_data)
+
+class CliContext:
+    def __init__(self, verbose: bool) -> None:
+        self.verbose: bool = verbose
+        self.data_dir: Path = CliContext.get_data_dir()
+        self.config_dir: Path = CliContext.get_config_dir()
+        self.active_session_file: Path = self.data_dir / "active_session.json"
+        self.session_log_file: Path = self.data_dir / "session_log.json"
+        self.active_session: Session | None = None
+        self.repo = JsonRepository()
+        self.active_session = self.repo.load_active_session()
+
+    @staticmethod
+    def get_data_dir() -> Path:
+        path = Path(user_data_dir("vmt"))
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @staticmethod
+    def get_config_dir() -> Path:
+        path = Path(user_config_dir("vmt"))
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
     def start_active_session(self, project_name: str, start_time: datetime) -> None:
         new_session = Session(start_time, project_name)
-        self.active_session_file.write_text(json.dumps(new_session.marshal()))
+        self.repo.write_active_session(new_session)
 
     def stop_active_session(self, at: datetime, round: bool = False) -> Session:
         assert self.active_session, (
