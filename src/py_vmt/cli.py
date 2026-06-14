@@ -50,7 +50,6 @@ class JsonRepository:
     def wipe_active_session_file(self) -> None:
         empty_json = "{}"
         self.active_session_file.write_text(empty_json)
-        self.active_session = None
 
     @staticmethod
     def get_data_dir() -> Path:
@@ -90,6 +89,9 @@ class CliContext:
         # clear out active session file
         self.repo.wipe_active_session_file()
 
+        # clear active session state
+        self.active_session = None
+
         return session
 
     def cancel_active_session(self) -> Session:
@@ -100,7 +102,11 @@ class CliContext:
         session = self.active_session
         session.stop()
 
+        # clear out active session file
         self.repo.wipe_active_session_file()
+
+        # clear active session state
+        self.active_session = None
 
         return session
 
