@@ -47,7 +47,7 @@ class JsonRepository:
     def load_session_log(self) -> list[Session]:
         return [Session.hydrate(raw_sesh) for raw_sesh in self.load_raw_session_log()]
 
-    def wipe_active_session_file(self) -> None:
+    def clear_active_session(self) -> None:
         empty_json = "{}"
         self.active_session_file.write_text(empty_json)
 
@@ -87,7 +87,7 @@ class CliContext:
         self.repo.write_event_to_session_log(session)
 
         # clear out active session file
-        self.repo.wipe_active_session_file()
+        self.repo.clear_active_session()
 
         # clear active session state
         self.active_session = None
@@ -103,7 +103,7 @@ class CliContext:
         session.stop()
 
         # clear out active session file
-        self.repo.wipe_active_session_file()
+        self.repo.clear_active_session()
 
         # clear active session state
         self.active_session = None
