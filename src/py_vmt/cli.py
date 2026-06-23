@@ -51,8 +51,8 @@ class JsonRepository:
         return [Session.hydrate(raw_sesh) for raw_sesh in self.load_raw_session_log()]
 
     def clear_active_session(self) -> None:
-        empty_json = "{}"
-        self.active_session_file.write_text(empty_json)
+        with atomic_write(self.active_session_file) as file:
+            json.dump({}, file)
 
     @staticmethod
     def get_data_dir() -> Path:
