@@ -6,6 +6,7 @@ from platformdirs import user_data_dir, user_config_dir
 import click
 from py_vmt import time_helpers
 from py_vmt.session import Session
+from py_vmt.file_utils import atomic_write
 
 
 type DateToSessionDict = collections.defaultdict[date, list[Session]]
@@ -28,7 +29,8 @@ class JsonRepository:
         return None
 
     def write_active_session(self, session: Session) -> None:
-        self.active_session_file.write_text(json.dumps(session.marshal()))
+        with atomic_write(self.active_session_file) as file:
+            json.dump(session.marshal(), file)
 
     def write_event_to_session_log(self, session: Session) -> None:
         existing_sessions = self.load_raw_session_log()
@@ -36,7 +38,8 @@ class JsonRepository:
         writeable_session = session.marshal()
         existing_sessions.append(writeable_session)
 
-        self.session_log_file.write_text(json.dumps(existing_sessions))
+        with atomic_write(self.session_log_file) as file:
+            json.dump(existing_sessions, file)
 
     def load_raw_session_log(self) -> list:
         if self.session_log_file.exists():
