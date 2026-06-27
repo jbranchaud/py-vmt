@@ -19,7 +19,7 @@ class JsonRepository:
         self.active_session_file: Path = self.data_dir / "active_session.json"
         self.session_log_file: Path = self.data_dir / "session_log.json"
 
-    def load_active_session(self) -> Session | None:
+    def active_session(self) -> Session | None:
         if self.active_session_file.exists():
             # TODO: good place to use Pydantic eventually
             session_data = json.loads(self.active_session_file.read_text()) or {}
@@ -32,7 +32,7 @@ class JsonRepository:
         with atomic_write(self.active_session_file) as file:
             json.dump(session.marshal(), file)
 
-    def write_event_to_session_log(self, session: Session) -> None:
+    def append_session(self, session: Session) -> None:
         existing_sessions = self.load_raw_session_log()
 
         writeable_session = session.marshal()
@@ -41,13 +41,13 @@ class JsonRepository:
         with atomic_write(self.session_log_file) as file:
             json.dump(existing_sessions, file)
 
-    def load_raw_session_log(self) -> list:
+    def load_raw_session_log(self) -> list[dict]:
         if self.session_log_file.exists():
             return json.loads(self.session_log_file.read_text())
 
         return []
 
-    def load_session_log(self) -> list[Session]:
+    def all_sessions(self) -> list[Session]:
         return [Session.hydrate(raw_sesh) for raw_sesh in self.load_raw_session_log()]
 
     def clear_active_session(self) -> None:
@@ -72,7 +72,7 @@ class CliContext:
         self.verbose: bool = verbose
         self.active_session: Session | None = None
         self.repo = JsonRepository()
-        self.active_session = self.repo.load_active_session()
+        self.active_session = self.repo.active_session()
 
     def start_active_session(self, project_name: str, start_time: datetime) -> None:
         new_session = Session(start_time, project_name)
@@ -87,7 +87,7 @@ class CliContext:
         session.stop(at, round)
 
         # log current session to "database"
-        self.repo.write_event_to_session_log(session)
+        self.repo.append_session(session)
 
         # clear out active session file
         self.repo.clear_active_session()
@@ -114,7 +114,7 @@ class CliContext:
         return session
 
     def load_latest_sessions(self) -> DateToSessionDict:
-        existing_sessions = self.repo.load_session_log()
+        existing_sessions = self.repo.all_sessions()
 
         days_ago_list = [timedelta(days=neg_index) for neg_index in range(0, -7, -1)]
         last_seven_days = [
