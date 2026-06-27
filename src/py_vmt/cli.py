@@ -2,6 +2,7 @@ import collections
 from datetime import date, datetime, timedelta, timezone
 import json
 from pathlib import Path
+from typing import Protocol
 from platformdirs import user_data_dir, user_config_dir
 import click
 from py_vmt import time_helpers
@@ -11,6 +12,12 @@ from py_vmt.file_utils import atomic_write
 
 type DateToSessionDict = collections.defaultdict[date, list[Session]]
 
+class SessionRepository(Protocol):
+    def active_session(self) -> Session | None: ...
+    def write_active_session(self, session) -> None: ...
+    def append_session(self, session) -> None: ...
+    def all_sessions(self) -> list[Session]: ...
+    def clear_active_session(self) -> None: ...
 
 class JsonRepository:
     def __init__(self) -> None:
@@ -68,10 +75,10 @@ class JsonRepository:
 
 
 class CliContext:
-    def __init__(self, verbose: bool) -> None:
+    def __init__(self, verbose: bool, repo: SessionRepository | None = None) -> None:
         self.verbose: bool = verbose
         self.active_session: Session | None = None
-        self.repo = JsonRepository()
+        self.repo: SessionRepository = repo or JsonRepository()
         self.active_session = self.repo.active_session()
 
     def start_active_session(self, project_name: str, start_time: datetime) -> None:
