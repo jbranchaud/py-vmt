@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import math
 
 
-def parse_to_datetime(at: str) -> datetime:
+def parse_to_datetime(at: str) -> datetime | None:
     settings = {"TO_TIMEZONE": "UTC", "RETURN_AS_TIMEZONE_AWARE": True}
     return dateparser.parse(at, settings=settings)
 
