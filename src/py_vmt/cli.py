@@ -8,6 +8,8 @@ from py_vmt import time_helpers
 from py_vmt.session import Session
 
 
+type DateToSessionDict = collections.defaultdict[date, list[Session]]
+
 class CliContext:
     def __init__(self, verbose: bool) -> None:
         self.verbose: bool = verbose
@@ -68,8 +70,6 @@ class CliContext:
         self._wipe_active_session_file()
 
         return session
-
-    type DateToSessionDict = collections.defaultdict[date, list[Session]]
 
     def load_latest_sessions(self) -> DateToSessionDict:
         existing_sessions = self._load_session_log()
