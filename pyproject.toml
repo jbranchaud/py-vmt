@@ -6,7 +6,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = ["click>=8.3.1", "dateparser>=1.3.0", "platformdirs>=4.9.4"]
 [dependency-groups]
-dev = ["freezegun>=1.5.5", "pytest>=9.0.2", "types-dateparser>=1.3.0.20260211"]
+dev = [
+    "freezegun>=1.5.5",
+    "pyright>=1.1.411",
+    "pytest>=9.0.2",
+    "types-dateparser>=1.3.0.20260211",
+]
 
 [project.scripts]
 vmt = "py_vmt.cli:cli"
