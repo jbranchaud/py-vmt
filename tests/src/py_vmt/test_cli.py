@@ -307,7 +307,7 @@ def test_stop_with_at_and_round_flags():
 
         # stop a session
         stop_result = runner.invoke(cli, ["stop", "--round", "--at", "'10 minutes ago'"])
-        output = f"Stopped tracking 'my-project' (45m)"
+        output = "Stopped tracking 'my-project' (45m)"
         assert output in stop_result.output
 
 
