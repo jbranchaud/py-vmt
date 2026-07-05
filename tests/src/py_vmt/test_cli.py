@@ -51,10 +51,7 @@ def test_start_status_stop_flow():
 
         # status with recent seciont, but no active session
         status_result = runner.invoke(cli, ["status"])
-        output_lines = [
-            "• Not tracking",
-            "Last: 'my-project' (1h30m) at 10:05AM"
-        ]
+        output_lines = ["• Not tracking", "Last: 'my-project' (1h30m) at 10:05AM"]
         for output in output_lines:
             assert output in status_result.output
 
@@ -113,6 +110,7 @@ def test_start_at_past_time():
         output = "Tracking 'my-project' for 1h3m (since 9:32AM)"
         assert output in status_result.output
 
+
 def test_start_at_in_future():
     runner = CliRunner()
 
@@ -126,12 +124,13 @@ def test_start_at_in_future():
         )
 
         output_lines = [
-          "Usage: vmt start [OPTIONS] PROJECT_NAME",
-          "Try 'vmt start --help' for help",
-          "Error: Invalid value for '--at': must be a relative time in the past"
+            "Usage: vmt start [OPTIONS] PROJECT_NAME",
+            "Try 'vmt start --help' for help",
+            "Error: Invalid value for '--at': must be a relative time in the past",
         ]
         for output in output_lines:
             assert output in start_result.output
+
 
 def test_start_at_with_bad_value():
     runner = CliRunner()
@@ -141,14 +140,12 @@ def test_start_at_with_bad_value():
     )
     with freeze_time(initial_datetime):
         # start a session
-        start_result = runner.invoke(
-            cli, ["start", "my-project", "--at", "'🕑'"]
-        )
+        start_result = runner.invoke(cli, ["start", "my-project", "--at", "'🕑'"])
 
         output_lines = [
-          "Usage: vmt start [OPTIONS] PROJECT_NAME",
-          "Try 'vmt start --help' for help",
-          "Error: Invalid value for '--at': must be a relative time in the past"
+            "Usage: vmt start [OPTIONS] PROJECT_NAME",
+            "Try 'vmt start --help' for help",
+            "Error: Invalid value for '--at': must be a relative time in the past",
         ]
         for output in output_lines:
             assert output in start_result.output
@@ -186,6 +183,7 @@ def test_stop_with_no_active_session():
         output = "Error: No active session being tracked. Start a session first."
         assert output in stop_result.output
 
+
 def test_stop_at_in_future():
     runner = CliRunner()
 
@@ -203,9 +201,9 @@ def test_stop_at_in_future():
         stop_result = runner.invoke(cli, ["stop", "--at", "'in 10 minutes'"])
 
         output_lines = [
-          "Usage: vmt stop [OPTIONS]",
-          "Try 'vmt stop --help' for help",
-          "Error: Invalid value for '--at': must be a relative time in the past"
+            "Usage: vmt stop [OPTIONS]",
+            "Try 'vmt stop --help' for help",
+            "Error: Invalid value for '--at': must be a relative time in the past",
         ]
         for output in output_lines:
             assert output in stop_result.output
@@ -228,9 +226,9 @@ def test_stop_at_after_start():
         stop_result = runner.invoke(cli, ["stop", "--at", "'30 minutes ago'"])
 
         output_lines = [
-          "Usage: vmt stop [OPTIONS]",
-          "Try 'vmt stop --help' for help",
-          "Error: Invalid value for '--at': stop time must be after start time"
+            "Usage: vmt stop [OPTIONS]",
+            "Try 'vmt stop --help' for help",
+            "Error: Invalid value for '--at': stop time must be after start time",
         ]
         for output in output_lines:
             assert output in stop_result.output
@@ -244,9 +242,7 @@ def test_stop_at_with_bad_value():
     )
     with freeze_time(initial_datetime) as frozen_datetime:
         # start a session
-        runner.invoke(
-            cli, ["start", "my-project"]
-        )
+        runner.invoke(cli, ["start", "my-project"])
 
         frozen_datetime.tick(delta=datetime.timedelta(minutes=30))
 
@@ -254,23 +250,27 @@ def test_stop_at_with_bad_value():
         stop_result = runner.invoke(cli, ["stop", "--at", "'🕑'"])
 
         output_lines = [
-          "Usage: vmt stop [OPTIONS]",
-          "Try 'vmt stop --help' for help",
-          "Error: Invalid value for '--at': must be a relative time in the past"
+            "Usage: vmt stop [OPTIONS]",
+            "Try 'vmt stop --help' for help",
+            "Error: Invalid value for '--at': must be a relative time in the past",
         ]
         for output in output_lines:
             assert output in stop_result.output
 
-@pytest.mark.parametrize("tick_amount,duration", [
-    (datetime.timedelta(minutes=52, seconds=31), "1h"),
-    (datetime.timedelta(minutes=52, seconds=30), "45m"),
-    (datetime.timedelta(minutes=45), "45m"),
-    (datetime.timedelta(minutes=46), "45m"),
-    (datetime.timedelta(minutes=44), "45m"),
-    (datetime.timedelta(minutes=60), "1h"),
-    (datetime.timedelta(minutes=61), "1h"),
-    (datetime.timedelta(minutes=74), "1h15m"),
-])
+
+@pytest.mark.parametrize(
+    "tick_amount,duration",
+    [
+        (datetime.timedelta(minutes=52, seconds=31), "1h"),
+        (datetime.timedelta(minutes=52, seconds=30), "45m"),
+        (datetime.timedelta(minutes=45), "45m"),
+        (datetime.timedelta(minutes=46), "45m"),
+        (datetime.timedelta(minutes=44), "45m"),
+        (datetime.timedelta(minutes=60), "1h"),
+        (datetime.timedelta(minutes=61), "1h"),
+        (datetime.timedelta(minutes=74), "1h15m"),
+    ],
+)
 def test_stop_with_round_flag(tick_amount, duration):
     runner = CliRunner()
 
@@ -306,7 +306,9 @@ def test_stop_with_at_and_round_flags():
         frozen_datetime.tick(delta=datetime.timedelta(minutes=55))
 
         # stop a session
-        stop_result = runner.invoke(cli, ["stop", "--round", "--at", "'10 minutes ago'"])
+        stop_result = runner.invoke(
+            cli, ["stop", "--round", "--at", "'10 minutes ago'"]
+        )
         output = "Stopped tracking 'my-project' (45m)"
         assert output in stop_result.output
 
@@ -366,7 +368,7 @@ Saturday, March 14
   10:05AM - 6:05PM		8h		TIL
 """
 
-        log_output_by_line = log_result.output.split('\n')
-        for i, expected_line in enumerate(expected_log_output.split('\n')):
+        log_output_by_line = log_result.output.split("\n")
+        for i, expected_line in enumerate(expected_log_output.split("\n")):
             actual_line = log_output_by_line[i]
             assert actual_line == expected_line

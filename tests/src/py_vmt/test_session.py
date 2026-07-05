@@ -3,6 +3,7 @@ from freezegun import freeze_time
 import pytest
 from py_vmt.session import Session
 
+
 def test_new_session():
     now = datetime.now()
     sesh = Session(now, "TIL")
@@ -10,6 +11,7 @@ def test_new_session():
     assert sesh.start_time == now
     assert sesh.project_name == "TIL"
     assert not sesh.end_time
+
 
 def test_new_session_with_end_time():
     now = datetime.now()
@@ -21,10 +23,9 @@ def test_new_session_with_end_time():
     assert sesh.project_name == "TIL"
     assert sesh.end_time == now
 
+
 def test_start():
-    initial_datetime = datetime(
-        2026, 3, 14, 15, 5, 11, 0, timezone.utc
-    )
+    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
     with freeze_time(initial_datetime):
         sesh = Session.start("TIL")
 
@@ -32,10 +33,9 @@ def test_start():
         assert sesh.project_name == "TIL"
         assert not sesh.end_time
 
+
 def test_start_then_stop():
-    initial_datetime = datetime(
-        2026, 3, 14, 15, 5, 11, 0, timezone.utc
-    )
+    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
     with freeze_time(initial_datetime) as frozen_datetime:
         sesh = Session.start("TIL")
 
@@ -47,10 +47,9 @@ def test_start_then_stop():
 
         assert sesh.end_time == (initial_datetime + timedelta(hours=3))
 
+
 def test_duration():
-    initial_datetime = datetime(
-        2026, 3, 14, 15, 5, 11, 0, timezone.utc
-    )
+    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
     with freeze_time(initial_datetime) as frozen_datetime:
         sesh = Session.start("TIL")
 
@@ -58,10 +57,9 @@ def test_duration():
 
         assert sesh.duration().total_seconds() == 11045
 
+
 def test_duration_after_stop():
-    initial_datetime = datetime(
-        2026, 3, 14, 15, 5, 11, 0, timezone.utc
-    )
+    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
     with freeze_time(initial_datetime) as frozen_datetime:
         sesh = Session.start("TIL")
 
@@ -73,18 +71,17 @@ def test_duration_after_stop():
 
         assert sesh.duration().total_seconds() == 11045
 
+
 def test_marshal():
-    initial_datetime = datetime(
-        2026, 3, 14, 15, 5, 11, 0, timezone.utc
-    )
+    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
     with freeze_time(initial_datetime) as frozen_datetime:
-        sesh = Session.start('TIL')
+        sesh = Session.start("TIL")
 
         sesh_data = sesh.marshal()
 
-        assert sesh_data['project_name'] == 'TIL'
-        assert sesh_data['start_time'] == '2026-03-14T15:05:11+00:00'
-        assert 'end_time' not in sesh_data
+        assert sesh_data["project_name"] == "TIL"
+        assert sesh_data["start_time"] == "2026-03-14T15:05:11+00:00"
+        assert "end_time" not in sesh_data
 
         frozen_datetime.tick(delta=timedelta(hours=3))
 
@@ -92,66 +89,60 @@ def test_marshal():
 
         sesh_data = sesh.marshal()
 
-        assert sesh_data['project_name'] == 'TIL'
-        assert sesh_data['start_time'] == '2026-03-14T15:05:11+00:00'
-        assert sesh_data['end_time'] == '2026-03-14T18:05:11+00:00'
+        assert sesh_data["project_name"] == "TIL"
+        assert sesh_data["start_time"] == "2026-03-14T15:05:11+00:00"
+        assert sesh_data["end_time"] == "2026-03-14T18:05:11+00:00"
+
 
 def test_hydrate():
     sesh_data = {
-        'start_time': '2026-03-14T15:05:11+00:00',
-        'project_name': 'TIL',
-        'end_time': '2026-03-14T18:05:11+00:00'
+        "start_time": "2026-03-14T15:05:11+00:00",
+        "project_name": "TIL",
+        "end_time": "2026-03-14T18:05:11+00:00",
     }
 
     sesh = Session.hydrate(sesh_data)
 
-    expected_start = datetime(
-        2026, 3, 14, 15, 5, 11, 0, timezone.utc
-    )
-    expected_end = datetime(
-        2026, 3, 14, 18, 5, 11, 0, timezone.utc
-    )
+    expected_start = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
+    expected_end = datetime(2026, 3, 14, 18, 5, 11, 0, timezone.utc)
 
     assert sesh.start_time == expected_start
-    assert sesh.project_name == 'TIL'
+    assert sesh.project_name == "TIL"
     assert sesh.end_time == expected_end
+
 
 def test_hydrate_without_end_time():
     sesh_data = {
-        'start_time': '2026-03-14T15:05:11+00:00',
-        'project_name': 'TIL',
+        "start_time": "2026-03-14T15:05:11+00:00",
+        "project_name": "TIL",
     }
 
     sesh = Session.hydrate(sesh_data)
 
-    expected_start = datetime(
-        2026, 3, 14, 15, 5, 11, 0, timezone.utc
-    )
+    expected_start = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
 
     assert sesh.start_time == expected_start
-    assert sesh.project_name == 'TIL'
+    assert sesh.project_name == "TIL"
     assert not sesh.end_time
 
+
 def test_hydrate_with_no_start_time():
-    sesh_data = {
-        "project_name": "TIL"
-    }
+    sesh_data = {"project_name": "TIL"}
 
     with pytest.raises(KeyError) as exception:
         Session.hydrate(sesh_data)
 
     assert "'start_time'" in str(exception.value)
 
+
 def test_hydrate_with_invalid_start_time():
-    sesh_data = {
-        "start_time": "abc123",
-        "project_name": "TIL"
-    }
+    sesh_data = {"start_time": "abc123", "project_name": "TIL"}
 
     with pytest.raises(ValueError) as exception:
         Session.hydrate(sesh_data)
 
     assert "Invalid isoformat string: 'abc123'" in str(exception.value)
+
 
 def test_list_of_sessions_is_sortable():
     now = datetime.now()

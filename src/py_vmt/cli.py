@@ -10,6 +10,7 @@ from py_vmt.session import Session
 
 type DateToSessionDict = collections.defaultdict[date, list[Session]]
 
+
 class CliContext:
     def __init__(self, verbose: bool) -> None:
         self.verbose: bool = verbose
@@ -44,9 +45,9 @@ class CliContext:
         self.active_session_file.write_text(json.dumps(new_session.marshal()))
 
     def stop_active_session(self, at: datetime, round: bool = False) -> Session:
-        assert (
-            self.active_session
-        ), "An active session is required in order to stop an active session"
+        assert self.active_session, (
+            "An active session is required in order to stop an active session"
+        )
 
         session = self.active_session
         session.stop(at, round)
@@ -60,9 +61,9 @@ class CliContext:
         return session
 
     def cancel_active_session(self) -> Session:
-        assert (
-            self.active_session
-        ), "An active session is required in order to cancel an active session"
+        assert self.active_session, (
+            "An active session is required in order to cancel an active session"
+        )
 
         session = self.active_session
         session.stop()
@@ -75,11 +76,17 @@ class CliContext:
         existing_sessions = self._load_session_log()
 
         days_ago_list = [timedelta(days=neg_index) for neg_index in range(0, -7, -1)]
-        last_seven_days = [(datetime.now() + days_ago).date() for days_ago in days_ago_list]
+        last_seven_days = [
+            (datetime.now() + days_ago).date() for days_ago in days_ago_list
+        ]
         sessions_grouped_by_day: DateToSessionDict = collections.defaultdict(list)
 
         for previous_date in last_seven_days:
-            sessions_for_date = [sesh for sesh in existing_sessions if sesh.start_time.date() == previous_date]
+            sessions_for_date = [
+                sesh
+                for sesh in existing_sessions
+                if sesh.start_time.date() == previous_date
+            ]
 
             if sessions_for_date:
                 sessions_for_date.sort()
@@ -142,6 +149,7 @@ class CliContext:
 # directly to each command handler
 pass_cli = click.make_pass_decorator(CliContext)
 
+
 # define top-level CLI group
 @click.group(name="vmt")
 @click.option(
@@ -172,10 +180,15 @@ def validate_start_at(_ctx, _param, value: str | None) -> datetime:
 
     return past_time
 
+
 # define `start` subcommand
 @cli.command()
 @click.argument("project-name")
-@click.option("--at", help='Relative time in past to start the time, e.g. "2 hours ago", "33 minutes ago"', callback=validate_start_at)
+@click.option(
+    "--at",
+    help='Relative time in past to start the time, e.g. "2 hours ago", "33 minutes ago"',
+    callback=validate_start_at,
+)
 @pass_cli
 def start(cli_ctx: CliContext, project_name: str, at: datetime) -> None:
     if cli_ctx.verbose:
@@ -209,7 +222,9 @@ def status(cli_ctx: CliContext) -> None:
         elapsed_time = time_helpers.format_time_delta(time_diff)
         started_at = time_helpers.format_timestamp(sesh.start_time)
 
-        msg = f"• Tracking '{sesh.project_name}' for {elapsed_time} (since {started_at})"
+        msg = (
+            f"• Tracking '{sesh.project_name}' for {elapsed_time} (since {started_at})"
+        )
         click.echo(msg)
     else:
         # read in most recent session
@@ -242,17 +257,29 @@ def validate_stop_at(ctx, _param, value: str | None) -> datetime:
 
     return past_time
 
+
 class RequireActiveSessionCommand(click.Command):
     def parse_args(self, ctx, args):
         if ctx.obj.active_session is None:
-            raise click.UsageError("No active session being tracked. Start a session first.")
+            raise click.UsageError(
+                "No active session being tracked. Start a session first."
+            )
 
         return super().parse_args(ctx, args)
 
+
 # define `stop` subcommand
 @cli.command(cls=RequireActiveSessionCommand)
-@click.option("--at", help='Hours previous to end the timer, e.g. "2 hours ago"', callback=validate_stop_at)
-@click.option("--round", help='Round the stop time to the nearest 15 minute interval', is_flag=True)
+@click.option(
+    "--at",
+    help='Hours previous to end the timer, e.g. "2 hours ago"',
+    callback=validate_stop_at,
+)
+@click.option(
+    "--round",
+    help="Round the stop time to the nearest 15 minute interval",
+    is_flag=True,
+)
 @pass_cli
 def stop(cli_ctx: CliContext, at: datetime, round: bool) -> None:
     stopped_at = at
@@ -320,6 +347,8 @@ def log(cli_ctx: CliContext):
 
             project_name = session.project_name
 
-            click.echo(f"  {start_time} - {end_time}\t\t{elapsed_time}\t\t{project_name}")
+            click.echo(
+                f"  {start_time} - {end_time}\t\t{elapsed_time}\t\t{project_name}"
+            )
 
         click.echo("")

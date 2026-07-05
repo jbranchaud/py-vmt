@@ -18,13 +18,17 @@ class Session:
     def start(project_name: str) -> "Session":
         return Session(datetime.now(timezone.utc), project_name)
 
-    def round_end_time(self, exact_end_time: datetime, interval: timedelta = timedelta(minutes=15)) -> datetime:
-        return find_nearest_timestamp_interval(self.start_time, exact_end_time, interval)
+    def round_end_time(
+        self, exact_end_time: datetime, interval: timedelta = timedelta(minutes=15)
+    ) -> datetime:
+        return find_nearest_timestamp_interval(
+            self.start_time, exact_end_time, interval
+        )
 
     def stop(self, at: datetime | None = None, round: bool = False):
         exact_end_time = at or datetime.now(timezone.utc)
         if round:
-            # difference between `self.start_time` and 
+            # difference between `self.start_time` and
             rounded_end_time = self.round_end_time(exact_end_time)
             self.end_time = rounded_end_time
         else:
@@ -46,13 +50,13 @@ class Session:
 
     def marshal(self) -> dict:
         marshalled_data = {
-            'project_name': self.project_name,
+            "project_name": self.project_name,
         }
 
         if self.start_time:
-            marshalled_data['start_time'] = datetime.isoformat(self.start_time)
+            marshalled_data["start_time"] = datetime.isoformat(self.start_time)
 
         if self.end_time:
-            marshalled_data['end_time'] = datetime.isoformat(self.end_time)
+            marshalled_data["end_time"] = datetime.isoformat(self.end_time)
 
         return marshalled_data
