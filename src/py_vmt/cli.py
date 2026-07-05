@@ -78,12 +78,12 @@ class CliContext:
         last_seven_days = [(datetime.now() + days_ago).date() for days_ago in days_ago_list]
         sessions_grouped_by_day: DateToSessionDict = collections.defaultdict(list)
 
-        for date in last_seven_days:
-            sessions_for_date = [sesh for sesh in existing_sessions if sesh.start_time.date() == date]
+        for previous_date in last_seven_days:
+            sessions_for_date = [sesh for sesh in existing_sessions if sesh.start_time.date() == previous_date]
 
             if sessions_for_date:
                 sessions_for_date.sort()
-                sessions_grouped_by_day[date] = sessions_for_date
+                sessions_grouped_by_day[previous_date] = sessions_for_date
 
         return sessions_grouped_by_day
         # find all sessions in the last 7 days
