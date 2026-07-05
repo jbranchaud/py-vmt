@@ -303,9 +303,9 @@ def log(cli_ctx: CliContext):
         click.echo(f"  {start_time} - ...\t\t{duration}\t\t{project_name}")
 
     yesterday = (datetime.now() - timedelta(days=1)).date()
-    for date, sessions_for_day in sessions.items():
-        date_display = date.strftime("%A, %B %d")
-        if date == yesterday:
+    for session_date, sessions_for_day in sessions.items():
+        date_display = session_date.strftime("%A, %B %d")
+        if session_date == yesterday:
             date_display = "Yesterday"
 
         click.echo(f"{date_display}")
