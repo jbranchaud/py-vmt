@@ -1,6 +1,5 @@
 import dateparser
 from datetime import datetime, timedelta
-import math
 
 
 def parse_to_datetime(at: str) -> datetime | None:
