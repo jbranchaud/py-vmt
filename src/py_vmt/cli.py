@@ -162,12 +162,12 @@ def cli(ctx: click.Context, verbose: bool):
 def validate_start_at(_ctx, _param, value: str | None) -> datetime:
     now = datetime.now(timezone.utc)
 
-    if value == None:
+    if value is None:
         return now
 
     past_time = time_helpers.parse_to_datetime(value)
 
-    if past_time == None or past_time > now:
+    if past_time is None or past_time > now:
         raise click.BadParameter("must be a relative time in the past")
 
     return past_time
@@ -229,12 +229,12 @@ def status(cli_ctx: CliContext) -> None:
 def validate_stop_at(ctx, _param, value: str | None) -> datetime:
     now = datetime.now(timezone.utc)
 
-    if value == None:
+    if value is None:
         return now
 
     past_time = time_helpers.parse_to_datetime(value)
 
-    if past_time == None or past_time > now:
+    if past_time is None or past_time > now:
         raise click.BadParameter("must be a relative time in the past")
 
     if past_time < ctx.obj.active_session.start_time:
