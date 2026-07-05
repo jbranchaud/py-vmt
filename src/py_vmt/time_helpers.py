@@ -7,7 +7,9 @@ def parse_to_datetime(at: str) -> datetime | None:
     return dateparser.parse(at, settings=settings)
 
 
-def find_nearest_timestamp_interval(start_time: datetime, end_time: datetime, interval: timedelta) -> datetime:
+def find_nearest_timestamp_interval(
+    start_time: datetime, end_time: datetime, interval: timedelta
+) -> datetime:
     diff = end_time - start_time
     rounding_point = interval.seconds // 2
     intervals, remainder = divmod(diff.seconds, interval.seconds)
@@ -19,6 +21,7 @@ def find_nearest_timestamp_interval(start_time: datetime, end_time: datetime, in
         return start_time + (intervals * interval)
     else:
         return start_time + ((intervals + 1) * interval)
+
 
 def format_time_delta(diff: timedelta) -> str:
     total_seconds = int(diff.total_seconds())
@@ -43,6 +46,7 @@ def _format_amount_with_suffix(amount, suffix):
         str = f"{amount}{suffix}"
 
     return str
+
 
 def format_timestamp(utc_datetime: datetime) -> str:
     # H:MM[AM|PM], e.g. 6:32PM
