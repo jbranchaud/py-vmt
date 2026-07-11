@@ -22,3 +22,6 @@ pythonpath = ["src"]
 filterwarnings = [
   "ignore:Timezone offset does not match system offset:UserWarning",
 ]
+
+[tool.pyright]
+include = ["src", "tests"]

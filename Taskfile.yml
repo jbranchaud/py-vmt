@@ -1,0 +1,27 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  GREETING: Hello, World!
+
+tasks:
+  default:
+    cmds:
+      - task: test
+      - task: typecheck
+      - task: lint
+      - task: fmt
+    silent: true
+  test:
+    cmds:
+      - uv run pytest
+  typecheck:
+    cmds:
+      - uv run pyright
+  lint:
+    cmds:
+      - uv run ruff check
+  fmt:
+    cmds:
+      - uv run ruff format
