@@ -2,6 +2,7 @@ from contextlib import contextmanager
 from pathlib import Path
 import os, tempfile
 
+
 @contextmanager
 def atomic_write(path: Path):
     # write to a tmp file in the same directory, then atomically swap it
