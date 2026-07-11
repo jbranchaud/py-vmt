@@ -14,7 +14,9 @@ def use_tmp_platform_dirs(tmp_path, monkeypatch):
     data_dir.mkdir()
     config_dir.mkdir()
     monkeypatch.setattr(JsonRepository, "get_data_dir", staticmethod(lambda: data_dir))
-    monkeypatch.setattr(JsonRepository, "get_config_dir", staticmethod(lambda: config_dir))
+    monkeypatch.setattr(
+        JsonRepository, "get_config_dir", staticmethod(lambda: config_dir)
+    )
 
 
 def test_no_status():
