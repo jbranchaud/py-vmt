@@ -7,7 +7,7 @@ vars:
 
 tasks:
   default:
-    desc: "pre-push checklist (test, typecheck, etc.)"
+    desc: 'pre-push checklist (test, typecheck, etc.)'
     cmds:
       - task: test
       - task: typecheck
@@ -15,18 +15,18 @@ tasks:
       - task: fmt
     silent: true
   test:
-    desc: "run pytest suite"
+    desc: 'run pytest suite'
     cmds:
       - uv run pytest
   typecheck:
-    desc: "run pyright type checking"
+    desc: 'run basedpyright type checking'
     cmds:
-      - uv run pyright
+      - uv run basedpyright
   lint:
-    desc: "run ruff linter"
+    desc: 'run ruff linter'
     cmds:
       - uv run ruff check
   fmt:
-    desc: "run ruff code formatting"
+    desc: 'run ruff code formatting'
     cmds:
       - uv run ruff format

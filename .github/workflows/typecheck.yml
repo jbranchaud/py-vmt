@@ -1,4 +1,4 @@
-name: pyright
+name: basedpyright
 
 on:
   pull_request:
@@ -22,5 +22,5 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --dev
 
-      - name: Run pyright
-        run: uv run pyright
+      - name: Run basedpyright
+        run: uv run basedpyright
