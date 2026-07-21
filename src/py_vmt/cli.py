@@ -2,12 +2,15 @@ import collections
 from datetime import date, datetime, timedelta, timezone
 import json
 from pathlib import Path
+from sqlite3 import Connection
+import sqlite3
 from typing import Protocol
 from platformdirs import user_data_dir, user_config_dir
 import click
 from py_vmt import time_helpers
 from py_vmt.session import Session
 from py_vmt.file_utils import atomic_write
+from py_vmt import db
 
 
 type DateToSessionDict = collections.defaultdict[date, list[Session]]
@@ -21,9 +24,62 @@ class SessionRepository(Protocol):
     def clear_active_session(self) -> None: ...
 
 
+class SqliteRepository:
+    def __init__(self) -> None:
+        # TODO: maybe `data_dir` is config that the repo is initialized with
+        self.data_dir: Path = SqliteRepository.get_data_dir()
+        self.config_dir: Path = SqliteRepository.get_config_dir()
+        self.db_file: Path = self.data_dir / "sessions.db"
+        self.conn: Connection = sqlite3.connect(self.db_file)
+
+        # always migrate the DB as part of initialization, this will mostly be a no-op
+        db.migrate(self.conn)
+
+    # TODO: Get the test suite set up to run against both repository adapters so that I can start to have some RED to work against
+    def active_session(self) -> Session | None:
+        cursor = self.conn.cursor()
+        fetch_active_session_sql = """
+            select id, active, projects.name as project_name, start_time, end_time
+            from sessions
+            join projects on sessions.project_id = projects.id
+            where session.active = 1;
+        """
+        result = cursor.execute(fetch_active_session_sql)
+        if result.fetchone() is None:
+            return None
+        _id, _active, project_name, start_time, end_time = result.fetchone()
+        data = {project_name: project_name, start_time: start_time, end_time: end_time}
+        return Session.hydrate(data)
+
+    def write_active_session(self, session) -> None:
+        pass
+
+    def append_session(self, session) -> None:
+        pass
+
+    def all_sessions(self) -> list[Session]:
+        return []
+
+    def clear_active_session(self) -> None:
+        pass
+
+    @staticmethod
+    def get_data_dir() -> Path:
+        path = Path(user_data_dir("vmt"))
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @staticmethod
+    def get_config_dir() -> Path:
+        path = Path(user_config_dir("vmt"))
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+
 class JsonRepository:
     def __init__(self) -> None:
         self.data_dir: Path = JsonRepository.get_data_dir()
+        # TODO: Move config_dir to the CLI Context, the Repo doesn't need to know about it
         self.config_dir: Path = JsonRepository.get_config_dir()
         self.active_session_file: Path = self.data_dir / "active_session.json"
         self.session_log_file: Path = self.data_dir / "session_log.json"
@@ -77,10 +133,11 @@ class JsonRepository:
 
 
 class CliContext:
-    def __init__(self, verbose: bool, repo: SessionRepository | None = None) -> None:
+    def __init__(self, *, verbose: bool) -> None:
         self.verbose: bool = verbose
+        self.config = self.read_config()
         self.active_session: Session | None = None
-        self.repo: SessionRepository = repo or JsonRepository()
+        self.repo = self._initialize_configured_repo()
         self.active_session = self.repo.active_session()
 
     def start_active_session(self, project_name: str, start_time: datetime) -> None:
@@ -172,6 +229,35 @@ class CliContext:
 
         return None
 
+    @staticmethod
+    def get_config_dir() -> Path:
+        path = Path(user_config_dir("vmt"))
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @staticmethod
+    def read_config() -> dict:
+        config_dir: Path = CliContext.get_config_dir()
+        config_file: Path = config_dir / "config.json"
+
+        if config_file.exists():
+            return json.loads(config_file.read_text())
+
+        return {}
+
+    _REPOS: dict[str, type[SessionRepository]] = {
+        "json": JsonRepository,
+        "sqlite": SqliteRepository,
+    }
+
+    def _initialize_configured_repo(self) -> SessionRepository:
+        default_format = "sqlite"
+        format = self.config.get("storage_format", default_format)
+        try:
+            return self._REPOS[format]()
+        except KeyError:
+            raise ValueError(f"Unknown storage_format: {format!r}")
+
 
 # This decorator allows for passing the `CliContext` object
 # directly to each command handler
@@ -189,7 +275,7 @@ pass_cli = click.make_pass_decorator(CliContext)
 @click.pass_context
 def cli(ctx: click.Context, verbose: bool):
     ctx.ensure_object(dict)
-    ctx.obj = CliContext(verbose)
+    ctx.obj = CliContext(verbose=verbose)
 
     if ctx.obj.verbose:
         click.echo("[ running `vmt` in verbose mode ]")
