@@ -1,0 +1,22 @@
+[
+  {
+    "label": "Debug: current test file",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "module": "pytest",
+    "args": ["$ZED_FILE", "-s"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "python": "$ZED_WORKTREE_ROOT/.venv/bin/python",
+    "justMyCode": false
+  },
+  {
+    "label": "Debug: all tests",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "module": "pytest",
+    "args": ["tests", "-s"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "python": "$ZED_WORKTREE_ROOT/.venv/bin/python",
+    "justMyCode": false
+  }
+]
