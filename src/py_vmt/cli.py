@@ -352,3 +352,7 @@ def log(cli_ctx: CliContext):
             )
 
         click.echo("")
+
+
+if __name__ == "__main__":
+    cli()

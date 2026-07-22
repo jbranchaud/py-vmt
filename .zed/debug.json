@@ -10,6 +10,17 @@
     "justMyCode": false
   },
   {
+    "label": "Debug vmt CLI",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "module": "py_vmt.cli",
+    "args": ["status"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "python": "$ZED_WORKTREE_ROOT/.venv/bin/python",
+    "env": { "PYTHONPATH": "$ZED_WORKTREE_ROOT/src" },
+    "justMyCode": false
+  },
+  {
     "label": "Debug: all tests",
     "adapter": "Debugpy",
     "request": "launch",
