@@ -6,18 +6,30 @@ from freezegun import freeze_time
 import pytest
 from py_vmt.cli import cli, CliContext
 
+# TODO: we will probably define a canonical list in some shared spot
+# that this file can pull in.
+STORAGE_FORMATS = ["json", "sqlite"]
+
+
+# Sort of documented here: https://docs.pytest.org/en/stable/example/parametrize.html#parametrization-with-multiple-fixtures
+@pytest.fixture(params=STORAGE_FORMATS)
+def storage_format(request) -> str:
+    return request.param
+
 
 # auto fixture for all test cases that monkeypatches the platform dirs to a tmp
 # path so that test side-effects don't persist between runs
 @pytest.fixture(autouse=True)
-def use_tmp_platform_dirs(tmp_path, monkeypatch):
+def use_tmp_platform_dirs(tmp_path, monkeypatch, storage_format):
     data_dir = tmp_path / "data"
     config_dir = tmp_path / "config"
     data_dir.mkdir()
     config_dir.mkdir()
 
     # override the `config.json` a little
-    (config_dir / "config.json").write_text(json.dumps({"storage_format": "json"}))
+    (config_dir / "config.json").write_text(
+        json.dumps({"storage_format": storage_format})
+    )
 
     monkeypatch.setattr(CliContext, "get_data_dir", staticmethod(lambda: data_dir))
     monkeypatch.setattr(CliContext, "get_config_dir", staticmethod(lambda: config_dir))
