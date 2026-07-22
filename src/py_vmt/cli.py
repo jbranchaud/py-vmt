@@ -25,10 +25,8 @@ class SessionRepository(Protocol):
 
 
 class SqliteRepository:
-    def __init__(self) -> None:
-        # TODO: maybe `data_dir` is config that the repo is initialized with
-        self.data_dir: Path = SqliteRepository.get_data_dir()
-        self.db_file: Path = self.data_dir / "sessions.db"
+    def __init__(self, *, data_dir: Path) -> None:
+        self.db_file: Path = data_dir / "sessions.db"
         self.conn: Connection = sqlite3.connect(self.db_file)
 
         # always migrate the DB as part of initialization, this will mostly be a no-op
@@ -62,18 +60,11 @@ class SqliteRepository:
     def clear_active_session(self) -> None:
         pass
 
-    @staticmethod
-    def get_data_dir() -> Path:
-        path = Path(user_data_dir("vmt"))
-        path.mkdir(parents=True, exist_ok=True)
-        return path
-
 
 class JsonRepository:
-    def __init__(self) -> None:
-        self.data_dir: Path = JsonRepository.get_data_dir()
-        self.active_session_file: Path = self.data_dir / "active_session.json"
-        self.session_log_file: Path = self.data_dir / "session_log.json"
+    def __init__(self, *, data_dir: Path) -> None:
+        self.active_session_file: Path = data_dir / "active_session.json"
+        self.session_log_file: Path = data_dir / "session_log.json"
 
     def active_session(self) -> Session | None:
         if self.active_session_file.exists():
@@ -110,19 +101,14 @@ class JsonRepository:
         with atomic_write(self.active_session_file) as file:
             json.dump({}, file)
 
-    @staticmethod
-    def get_data_dir() -> Path:
-        path = Path(user_data_dir("vmt"))
-        path.mkdir(parents=True, exist_ok=True)
-        return path
-
 
 class CliContext:
     def __init__(self, *, verbose: bool) -> None:
         self.verbose: bool = verbose
+        self.data_dir: Path = CliContext.get_data_dir()
         self.config = self.read_config()
         self.active_session: Session | None = None
-        self.repo = self._initialize_configured_repo()
+        self.repo = self._initialize_configured_repo(data_dir=self.data_dir)
         self.active_session = self.repo.active_session()
 
     def start_active_session(self, project_name: str, start_time: datetime) -> None:
@@ -215,6 +201,12 @@ class CliContext:
         return None
 
     @staticmethod
+    def get_data_dir() -> Path:
+        path = Path(user_data_dir("vmt"))
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @staticmethod
     def get_config_dir() -> Path:
         path = Path(user_config_dir("vmt"))
         path.mkdir(parents=True, exist_ok=True)
@@ -235,11 +227,11 @@ class CliContext:
         "sqlite": SqliteRepository,
     }
 
-    def _initialize_configured_repo(self) -> SessionRepository:
+    def _initialize_configured_repo(self, **config) -> SessionRepository:
         default_format = "sqlite"
         format = self.config.get("storage_format", default_format)
         try:
-            return self._REPOS[format]()
+            return self._REPOS[format](**config)
         except KeyError:
             raise ValueError(f"Unknown storage_format: {format!r}")
 
