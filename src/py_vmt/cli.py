@@ -32,14 +32,13 @@ class SqliteRepository:
         # always migrate the DB as part of initialization, this will mostly be a no-op
         db.migrate(self.conn)
 
-    # TODO: Get the test suite set up to run against both repository adapters so that I can start to have some RED to work against
     def active_session(self) -> Session | None:
         cursor = self.conn.cursor()
         fetch_active_session_sql = """
-            select id, active, projects.name as project_name, start_time, end_time
+            select sessions.id, sessions.active, projects.name as project_name, sessions.start_time, sessions.end_time
             from sessions
             join projects on sessions.project_id = projects.id
-            where session.active = 1;
+            where sessions.active = 1;
         """
         result = cursor.execute(fetch_active_session_sql)
         if result.fetchone() is None:
