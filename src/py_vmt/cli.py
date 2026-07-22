@@ -28,7 +28,6 @@ class SqliteRepository:
     def __init__(self) -> None:
         # TODO: maybe `data_dir` is config that the repo is initialized with
         self.data_dir: Path = SqliteRepository.get_data_dir()
-        self.config_dir: Path = SqliteRepository.get_config_dir()
         self.db_file: Path = self.data_dir / "sessions.db"
         self.conn: Connection = sqlite3.connect(self.db_file)
 
@@ -69,18 +68,10 @@ class SqliteRepository:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    @staticmethod
-    def get_config_dir() -> Path:
-        path = Path(user_config_dir("vmt"))
-        path.mkdir(parents=True, exist_ok=True)
-        return path
-
 
 class JsonRepository:
     def __init__(self) -> None:
         self.data_dir: Path = JsonRepository.get_data_dir()
-        # TODO: Move config_dir to the CLI Context, the Repo doesn't need to know about it
-        self.config_dir: Path = JsonRepository.get_config_dir()
         self.active_session_file: Path = self.data_dir / "active_session.json"
         self.session_log_file: Path = self.data_dir / "session_log.json"
 
@@ -122,12 +113,6 @@ class JsonRepository:
     @staticmethod
     def get_data_dir() -> Path:
         path = Path(user_data_dir("vmt"))
-        path.mkdir(parents=True, exist_ok=True)
-        return path
-
-    @staticmethod
-    def get_config_dir() -> Path:
-        path = Path(user_config_dir("vmt"))
         path.mkdir(parents=True, exist_ok=True)
         return path
 
