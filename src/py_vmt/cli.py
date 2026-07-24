@@ -19,7 +19,6 @@ type DateToSessionDict = collections.defaultdict[date, list[Session]]
 class SessionRepository(Protocol):
     def active_session(self) -> Session | None: ...
     def write_active_session(self, session) -> None: ...
-    def append_session(self, session) -> None: ...
     def all_sessions(self) -> list[Session]: ...
     def clear_active_session(self) -> None: ...
     def complete_active_session(self, session) -> None: ...
@@ -54,9 +53,6 @@ class SqliteRepository:
 
     def write_active_session(self, session: Session) -> None:
         self.write_session_with_project(session, active=True)
-
-    def append_session(self, session: Session) -> None:
-        self.write_session_with_project(session, active=False)
 
     def all_sessions(self) -> list[Session]:
         fetch_all_sessions_sql = """
@@ -167,15 +163,6 @@ class JsonRepository:
             json.dump(existing_sessions, file)
 
         self.clear_active_session()
-
-    def append_session(self, session: Session) -> None:
-        existing_sessions = self.load_raw_session_log()
-
-        writeable_session = session.marshal()
-        existing_sessions.append(writeable_session)
-
-        with atomic_write(self.session_log_file) as file:
-            json.dump(existing_sessions, file)
 
     def load_raw_session_log(self) -> list[dict]:
         if self.session_log_file.exists():
