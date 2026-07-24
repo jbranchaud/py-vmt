@@ -41,23 +41,91 @@ class SqliteRepository:
             where sessions.active = 1;
         """
         result = cursor.execute(fetch_active_session_sql)
-        if result.fetchone() is None:
+        raw_active_session = result.fetchone()
+        if raw_active_session is None:
             return None
-        _id, _active, project_name, start_time, end_time = result.fetchone()
-        data = {project_name: project_name, start_time: start_time, end_time: end_time}
+        _id, _active, project_name, start_time, end_time = raw_active_session
+        data = {
+            "project_name": project_name,
+            "start_time": start_time,
+            "end_time": end_time,
+        }
         return Session.hydrate(data)
 
-    def write_active_session(self, session) -> None:
-        pass
+    def write_active_session(self, session: Session) -> None:
+        self.write_session_with_project(session, active=True)
 
-    def append_session(self, session) -> None:
-        pass
+    def append_session(self, session: Session) -> None:
+        self.write_session_with_project(session, active=False)
 
     def all_sessions(self) -> list[Session]:
-        return []
+        fetch_all_sessions_sql = """
+            select sessions.id, sessions.active, projects.name as project_name, sessions.start_time, sessions.end_time
+            from sessions
+            join projects on sessions.project_id = projects.id;
+        """
+        cursor = self.conn.execute(fetch_all_sessions_sql)
+        results = cursor.fetchall()
+        if results is None:
+            return []
+
+        sessions = []
+        for raw_session in results:
+            _id, _active, project_name, start_time, end_time = raw_session
+            data = {
+                "project_name": project_name,
+                "start_time": start_time,
+                "end_time": end_time,
+            }
+            sessions.append(Session.hydrate(data))
+
+        return sessions
 
     def clear_active_session(self) -> None:
-        pass
+        # Delete the current active session if there is one
+        self.conn.execute("""
+            delete from sessions where active = 1;
+        """)
+        self.conn.commit()
+
+    def write_session_with_project(self, session, *, active=False) -> None:
+        with self.conn:
+            if active:
+                # Delete the current active session if there is one
+                self.conn.execute("""
+                    delete from sessions where active = 1;
+                """)
+
+            # Upsert (find or create) the project based on `session.project_name`
+            cursor = self.conn.execute(
+                """
+                insert into projects (name) values (:project_name)
+                on conflict (name) do update set name = excluded.name
+                returning id;
+            """,
+                {"project_name": session.project_name},
+            )
+            project_id = cursor.fetchone()[0]
+
+            # Prepare `sessions` insert payload
+            session_data = {
+                "active": 1 if active else 0,
+                "project_id": project_id,
+                "start_time": datetime.isoformat(session.start_time),
+                "end_time": None,
+            }
+
+            if session.end_time:
+                session_data["end_time"] = datetime.isoformat(session.end_time)
+
+            # Insert the new active session
+            self.conn.execute(
+                """
+                insert into sessions (active, project_id, start_time, end_time)
+                values (:active, :project_id, :start_time, :end_time);
+            """,
+                session_data,
+            )
 
 
 class JsonRepository:
