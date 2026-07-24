@@ -1,10 +1,10 @@
 import json
 
-from click.testing import CliRunner
 import datetime
 from freezegun import freeze_time
 import pytest
 from py_vmt.cli import cli, CliContext
+from conftest import BetterCliRunner
 
 # TODO: we will probably define a canonical list in some shared spot
 # that this file can pull in.
@@ -36,13 +36,13 @@ def use_tmp_platform_dirs(tmp_path, monkeypatch, storage_format):
 
 
 def test_no_status():
-    runner = CliRunner()
+    runner = BetterCliRunner()
     result = runner.invoke(cli, ["status"])
     assert "Not tracking" in result.output
 
 
 def test_start_status_stop_flow():
-    runner = CliRunner()
+    runner = BetterCliRunner()
 
     initial_datetime = datetime.datetime(
         2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
@@ -75,7 +75,7 @@ def test_start_status_stop_flow():
 
 
 def test_start_cancel_flow():
-    runner = CliRunner()
+    runner = BetterCliRunner()
 
     initial_datetime = datetime.datetime(
         2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
@@ -95,7 +95,7 @@ def test_start_cancel_flow():
 
 
 def test_cancel_without_active_session():
-    runner = CliRunner()
+    runner = BetterCliRunner()
 
     initial_datetime = datetime.datetime(
         2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
@@ -108,7 +108,7 @@ def test_cancel_without_active_session():
 
 
 def test_start_at_past_time():
-    runner = CliRunner()
+    runner = BetterCliRunner()
 
     initial_datetime = datetime.datetime(
         2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
@@ -130,7 +130,7 @@ def test_start_at_past_time():
 
 
 def test_start_at_in_future():
-    runner = CliRunner()
+    runner = BetterCliRunner()
 
     initial_datetime = datetime.datetime(
         2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
@@ -151,7 +151,7 @@ def test_start_at_in_future():
 
 
 def test_start_at_with_bad_value():
-    runner = CliRunner()
+    runner = BetterCliRunner()
 
     initial_datetime = datetime.datetime(
         2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
@@ -170,7 +170,7 @@ def test_start_at_with_bad_value():
 
 
 def test_stop_at_earlier_time():
-    runner = CliRunner()
+    runner = BetterCliRunner()
 
     initial_datetime = datetime.datetime(
         2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
@@ -190,7 +190,7 @@ def test_stop_at_earlier_time():
 
 
 def test_stop_with_no_active_session():
-    runner = CliRunner()
+    runner = BetterCliRunner()
 
     initial_datetime = datetime.datetime(
         2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
@@ -203,7 +203,7 @@ def test_stop_with_no_active_session():
 
 
 def test_stop_at_in_future():
-    runner = CliRunner()
+    runner = BetterCliRunner()
 
     initial_datetime = datetime.datetime(
         2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
@@ -228,7 +228,7 @@ def test_stop_at_in_future():
 
 
 def test_stop_at_after_start():
-    runner = CliRunner()
+    runner = BetterCliRunner()
 
     initial_datetime = datetime.datetime(
         2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
@@ -253,7 +253,7 @@ def test_stop_at_after_start():
 
 
 def test_stop_at_with_bad_value():
-    runner = CliRunner()
+    runner = BetterCliRunner()
 
     initial_datetime = datetime.datetime(
         2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
@@ -290,7 +290,7 @@ def test_stop_at_with_bad_value():
     ],
 )
 def test_stop_with_round_flag(tick_amount, duration):
-    runner = CliRunner()
+    runner = BetterCliRunner()
 
     initial_datetime = datetime.datetime(
         2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
@@ -310,7 +310,7 @@ def test_stop_with_round_flag(tick_amount, duration):
 
 
 def test_stop_with_at_and_round_flags():
-    runner = CliRunner()
+    runner = BetterCliRunner()
 
     initial_datetime = datetime.datetime(
         2026, 3, 14, 15, 5, 11, 0, datetime.timezone.utc
@@ -332,7 +332,7 @@ def test_stop_with_at_and_round_flags():
 
 
 def test_log_recent_activity():
-    runner = CliRunner()
+    runner = BetterCliRunner()
 
     # set up the data dir file with some existing session entries
     initial_datetime = datetime.datetime(
