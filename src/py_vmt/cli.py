@@ -22,6 +22,7 @@ class SessionRepository(Protocol):
     def append_session(self, session) -> None: ...
     def all_sessions(self) -> list[Session]: ...
     def clear_active_session(self) -> None: ...
+    def complete_active_session(self, session) -> None: ...
 
 
 class SqliteRepository:
@@ -79,6 +80,17 @@ class SqliteRepository:
             sessions.append(Session.hydrate(data))
 
         return sessions
+
+    def complete_active_session(self, session: Session) -> None:
+        # Do we want some kind of assertion that `sessions` matches the currently active session?
+
+        with self.conn:
+            self.conn.execute(
+                """
+                update sessions set active = :active, end_time = :end_time where active = 1;
+            """,
+                {"active": 0, "end_time": session.end_time},
+            )
 
     def clear_active_session(self) -> None:
         # Delete the current active session if there is one
@@ -145,6 +157,17 @@ class JsonRepository:
         with atomic_write(self.active_session_file) as file:
             json.dump(session.marshal(), file)
 
+    def complete_active_session(self, session: Session) -> None:
+        existing_sessions = self.load_raw_session_log()
+
+        writeable_session = session.marshal()
+        existing_sessions.append(writeable_session)
+
+        with atomic_write(self.session_log_file) as file:
+            json.dump(existing_sessions, file)
+
+        self.clear_active_session()
+
     def append_session(self, session: Session) -> None:
         existing_sessions = self.load_raw_session_log()
 
@@ -189,11 +212,7 @@ class CliContext:
         session = self.active_session
         session.stop(at, round)
 
-        # log current session to "database"
-        self.repo.append_session(session)
-
-        # clear out active session file
-        self.repo.clear_active_session()
+        self.repo.complete_active_session(session)
 
         # clear active session state
         self.active_session = None
