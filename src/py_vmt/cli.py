@@ -2,47 +2,185 @@ import collections
 from datetime import date, datetime, timedelta, timezone
 import json
 from pathlib import Path
+from sqlite3 import Connection
+import sqlite3
+from typing import Protocol
 from platformdirs import user_data_dir, user_config_dir
 import click
 from py_vmt import time_helpers
 from py_vmt.session import Session
+from py_vmt.file_utils import atomic_write
+from py_vmt import db
 
 
 type DateToSessionDict = collections.defaultdict[date, list[Session]]
 
 
-class CliContext:
-    def __init__(self, verbose: bool) -> None:
-        self.verbose: bool = verbose
-        self.data_dir: Path = CliContext.get_data_dir()
-        self.config_dir: Path = CliContext.get_config_dir()
-        self.active_session_file: Path = self.data_dir / "active_session.json"
-        self.session_log_file: Path = self.data_dir / "session_log.json"
-        self.active_session: Session | None = None
-        self.load_active_session()
+class SessionRepository(Protocol):
+    def active_session(self) -> Session | None: ...
+    def write_active_session(self, session) -> None: ...
+    def append_session(self, session) -> None: ...
+    def all_sessions(self) -> list[Session]: ...
+    def clear_active_session(self) -> None: ...
 
-    @staticmethod
-    def get_data_dir() -> Path:
-        path = Path(user_data_dir("vmt"))
-        path.mkdir(parents=True, exist_ok=True)
-        return path
 
-    @staticmethod
-    def get_config_dir() -> Path:
-        path = Path(user_config_dir("vmt"))
-        path.mkdir(parents=True, exist_ok=True)
-        return path
+class SqliteRepository:
+    def __init__(self, *, data_dir: Path) -> None:
+        self.db_file: Path = data_dir / "sessions.db"
+        self.conn: Connection = sqlite3.connect(self.db_file)
 
-    def load_active_session(self) -> None:
+        # always migrate the DB as part of initialization, this will mostly be a no-op
+        db.migrate(self.conn)
+
+    def active_session(self) -> Session | None:
+        cursor = self.conn.cursor()
+        fetch_active_session_sql = """
+            select sessions.id, sessions.active, projects.name as project_name, sessions.start_time, sessions.end_time
+            from sessions
+            join projects on sessions.project_id = projects.id
+            where sessions.active = 1;
+        """
+        result = cursor.execute(fetch_active_session_sql)
+        raw_active_session = result.fetchone()
+        if raw_active_session is None:
+            return None
+        _id, _active, project_name, start_time, end_time = raw_active_session
+        data = {
+            "project_name": project_name,
+            "start_time": start_time,
+            "end_time": end_time,
+        }
+        return Session.hydrate(data)
+
+    def write_active_session(self, session: Session) -> None:
+        self.write_session_with_project(session, active=True)
+
+    def append_session(self, session: Session) -> None:
+        self.write_session_with_project(session, active=False)
+
+    def all_sessions(self) -> list[Session]:
+        fetch_all_sessions_sql = """
+            select sessions.id, sessions.active, projects.name as project_name, sessions.start_time, sessions.end_time
+            from sessions
+            join projects on sessions.project_id = projects.id;
+        """
+        cursor = self.conn.execute(fetch_all_sessions_sql)
+        results = cursor.fetchall()
+        if results is None:
+            return []
+
+        sessions = []
+        for raw_session in results:
+            _id, _active, project_name, start_time, end_time = raw_session
+            data = {
+                "project_name": project_name,
+                "start_time": start_time,
+                "end_time": end_time,
+            }
+            sessions.append(Session.hydrate(data))
+
+        return sessions
+
+    def clear_active_session(self) -> None:
+        # Delete the current active session if there is one
+        self.conn.execute("""
+            delete from sessions where active = 1;
+        """)
+        self.conn.commit()
+
+    def write_session_with_project(self, session, *, active=False) -> None:
+        with self.conn:
+            if active:
+                # Delete the current active session if there is one
+                self.conn.execute("""
+                    delete from sessions where active = 1;
+                """)
+
+            # Upsert (find or create) the project based on `session.project_name`
+            cursor = self.conn.execute(
+                """
+                insert into projects (name) values (:project_name)
+                on conflict (name) do update set name = excluded.name
+                returning id;
+            """,
+                {"project_name": session.project_name},
+            )
+            project_id = cursor.fetchone()[0]
+
+            # Prepare `sessions` insert payload
+            session_data = {
+                "active": 1 if active else 0,
+                "project_id": project_id,
+                "start_time": datetime.isoformat(session.start_time),
+                "end_time": None,
+            }
+
+            if session.end_time:
+                session_data["end_time"] = datetime.isoformat(session.end_time)
+
+            # Insert the new active session
+            self.conn.execute(
+                """
+                insert into sessions (active, project_id, start_time, end_time)
+                values (:active, :project_id, :start_time, :end_time);
+            """,
+                session_data,
+            )
+
+
+class JsonRepository:
+    def __init__(self, *, data_dir: Path) -> None:
+        self.active_session_file: Path = data_dir / "active_session.json"
+        self.session_log_file: Path = data_dir / "session_log.json"
+
+    def active_session(self) -> Session | None:
         if self.active_session_file.exists():
             # TODO: good place to use Pydantic eventually
             session_data = json.loads(self.active_session_file.read_text()) or {}
             if "project_name" in session_data:
-                self.active_session = Session.hydrate(session_data)
+                return Session.hydrate(session_data)
+
+        return None
+
+    def write_active_session(self, session: Session) -> None:
+        with atomic_write(self.active_session_file) as file:
+            json.dump(session.marshal(), file)
+
+    def append_session(self, session: Session) -> None:
+        existing_sessions = self.load_raw_session_log()
+
+        writeable_session = session.marshal()
+        existing_sessions.append(writeable_session)
+
+        with atomic_write(self.session_log_file) as file:
+            json.dump(existing_sessions, file)
+
+    def load_raw_session_log(self) -> list[dict]:
+        if self.session_log_file.exists():
+            return json.loads(self.session_log_file.read_text())
+
+        return []
+
+    def all_sessions(self) -> list[Session]:
+        return [Session.hydrate(raw_sesh) for raw_sesh in self.load_raw_session_log()]
+
+    def clear_active_session(self) -> None:
+        with atomic_write(self.active_session_file) as file:
+            json.dump({}, file)
+
+
+class CliContext:
+    def __init__(self, *, verbose: bool) -> None:
+        self.verbose: bool = verbose
+        self.data_dir: Path = CliContext.get_data_dir()
+        self.config = self.read_config()
+        self.active_session: Session | None = None
+        self.repo = self._initialize_configured_repo(data_dir=self.data_dir)
+        self.active_session = self.repo.active_session()
 
     def start_active_session(self, project_name: str, start_time: datetime) -> None:
         new_session = Session(start_time, project_name)
-        self.active_session_file.write_text(json.dumps(new_session.marshal()))
+        self.repo.write_active_session(new_session)
 
     def stop_active_session(self, at: datetime, round: bool = False) -> Session:
         assert self.active_session, (
@@ -53,10 +191,13 @@ class CliContext:
         session.stop(at, round)
 
         # log current session to "database"
-        self._write_event_to_session_log(session)
+        self.repo.append_session(session)
 
         # clear out active session file
-        self._wipe_active_session_file()
+        self.repo.clear_active_session()
+
+        # clear active session state
+        self.active_session = None
 
         return session
 
@@ -68,12 +209,16 @@ class CliContext:
         session = self.active_session
         session.stop()
 
-        self._wipe_active_session_file()
+        # clear out active session file
+        self.repo.clear_active_session()
+
+        # clear active session state
+        self.active_session = None
 
         return session
 
     def load_latest_sessions(self) -> DateToSessionDict:
-        existing_sessions = self._load_session_log()
+        existing_sessions = self.repo.all_sessions()
 
         days_ago_list = [timedelta(days=neg_index) for neg_index in range(0, -7, -1)]
         last_seven_days = [
@@ -122,27 +267,40 @@ class CliContext:
 
         return None
 
-    def _wipe_active_session_file(self) -> None:
-        empty_json = "{}"
-        self.active_session_file.write_text(empty_json)
-        self.active_session = None
+    @staticmethod
+    def get_data_dir() -> Path:
+        path = Path(user_data_dir("vmt"))
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
-    def _write_event_to_session_log(self, session: Session) -> None:
-        existing_sessions = self._load_raw_session_log()
+    @staticmethod
+    def get_config_dir() -> Path:
+        path = Path(user_config_dir("vmt"))
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
-        writeable_session = session.marshal()
-        existing_sessions.append(writeable_session)
+    @staticmethod
+    def read_config() -> dict:
+        config_dir: Path = CliContext.get_config_dir()
+        config_file: Path = config_dir / "config.json"
 
-        self.session_log_file.write_text(json.dumps(existing_sessions))
+        if config_file.exists():
+            return json.loads(config_file.read_text())
 
-    def _load_raw_session_log(self) -> list:
-        if self.session_log_file.exists():
-            return json.loads(self.session_log_file.read_text())
+        return {}
 
-        return []
+    _REPOS: dict[str, type[SessionRepository]] = {
+        "json": JsonRepository,
+        "sqlite": SqliteRepository,
+    }
 
-    def _load_session_log(self) -> list[Session]:
-        return [Session.hydrate(raw_sesh) for raw_sesh in self._load_raw_session_log()]
+    def _initialize_configured_repo(self, **config) -> SessionRepository:
+        default_format = "sqlite"
+        format = self.config.get("storage_format", default_format)
+        try:
+            return self._REPOS[format](**config)
+        except KeyError:
+            raise ValueError(f"Unknown storage_format: {format!r}")
 
 
 # This decorator allows for passing the `CliContext` object
@@ -161,7 +319,7 @@ pass_cli = click.make_pass_decorator(CliContext)
 @click.pass_context
 def cli(ctx: click.Context, verbose: bool):
     ctx.ensure_object(dict)
-    ctx.obj = CliContext(verbose)
+    ctx.obj = CliContext(verbose=verbose)
 
     if ctx.obj.verbose:
         click.echo("[ running `vmt` in verbose mode ]")
@@ -191,10 +349,6 @@ def validate_start_at(_ctx, _param, value: str | None) -> datetime:
 )
 @pass_cli
 def start(cli_ctx: CliContext, project_name: str, at: datetime) -> None:
-    if cli_ctx.verbose:
-        msg = f"[ start cmd ctx - data_dir: {cli_ctx.data_dir}, config_dir: {cli_ctx.config_dir} ]"
-        click.echo(msg)
-
     if cli_ctx.active_session:
         msg = f"Error: already tracking '{cli_ctx.active_session.project_name}'. Stop the current session first."
         click.echo(msg)

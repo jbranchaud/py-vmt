@@ -43,7 +43,7 @@ class Session:
     def hydrate(data: dict) -> "Session":
         start_time = datetime.fromisoformat(data["start_time"])
         end_time = None
-        if "end_time" in data:
+        if "end_time" in data and data["end_time"] is not None:
             end_time = datetime.fromisoformat(data["end_time"])
 
         return Session(start_time, data["project_name"], end_time)
