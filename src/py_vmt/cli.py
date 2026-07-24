@@ -33,14 +33,13 @@ class SqliteRepository:
         db.migrate(self.conn)
 
     def active_session(self) -> Session | None:
-        cursor = self.conn.cursor()
         fetch_active_session_sql = """
             select sessions.id, sessions.active, projects.name as project_name, sessions.start_time, sessions.end_time
             from sessions
             join projects on sessions.project_id = projects.id
             where sessions.active = 1;
         """
-        result = cursor.execute(fetch_active_session_sql)
+        result = self.conn.execute(fetch_active_session_sql)
         raw_active_session = result.fetchone()
         if raw_active_session is None:
             return None
@@ -64,13 +63,13 @@ class SqliteRepository:
             from sessions
             join projects on sessions.project_id = projects.id;
         """
-        cursor = self.conn.execute(fetch_all_sessions_sql)
-        results = cursor.fetchall()
-        if results is None:
+        result = self.conn.execute(fetch_all_sessions_sql)
+        raw_sessions = result.fetchall()
+        if raw_sessions is None:
             return []
 
         sessions = []
-        for raw_session in results:
+        for raw_session in raw_sessions:
             _id, _active, project_name, start_time, end_time = raw_session
             data = {
                 "project_name": project_name,
@@ -83,10 +82,10 @@ class SqliteRepository:
 
     def clear_active_session(self) -> None:
         # Delete the current active session if there is one
-        self.conn.execute("""
-            delete from sessions where active = 1;
-        """)
-        self.conn.commit()
+        with self.conn:
+            self.conn.execute("""
+                delete from sessions where active = 1;
+            """)
 
     def write_session_with_project(self, session, *, active=False) -> None:
         with self.conn:
