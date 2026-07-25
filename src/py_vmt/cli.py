@@ -29,6 +29,10 @@ class SqliteRepository:
         self.db_file: Path = data_dir / "sessions.db"
         self.conn: Connection = sqlite3.connect(self.db_file)
 
+        # Enable Row Factory for the result set
+        # https://docs.python.org/3/library/sqlite3.html#how-to-create-and-use-row-factories
+        self.conn.row_factory = sqlite3.Row
+
         # always migrate the DB as part of initialization, this will mostly be a no-op
         db.migrate(self.conn)
 
@@ -39,10 +43,6 @@ class SqliteRepository:
             join projects on sessions.project_id = projects.id
             where sessions.active = 1;
         """
-
-        # Enable Row Factory for the result set
-        # https://docs.python.org/3/library/sqlite3.html#how-to-create-and-use-row-factories
-        self.conn.row_factory = sqlite3.Row
 
         result = self.conn.execute(fetch_active_session_sql)
         raw_active_session = result.fetchone()
@@ -66,16 +66,13 @@ class SqliteRepository:
         """
         result = self.conn.execute(fetch_all_sessions_sql)
         raw_sessions = result.fetchall()
-        if raw_sessions is None:
-            return []
 
         sessions = []
         for raw_session in raw_sessions:
-            _id, _active, project_name, start_time, end_time = raw_session
             data = {
-                "project_name": project_name,
-                "start_time": start_time,
-                "end_time": end_time,
+                "project_name": raw_session["project_name"],
+                "start_time": raw_session["start_time"],
+                "end_time": raw_session["end_time"],
             }
             sessions.append(Session.hydrate(data))
 
