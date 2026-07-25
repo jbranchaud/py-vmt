@@ -39,17 +39,21 @@ class SqliteRepository:
             join projects on sessions.project_id = projects.id
             where sessions.active = 1;
         """
+
+        # Enable Row Factory for the result set
+        # https://docs.python.org/3/library/sqlite3.html#how-to-create-and-use-row-factories
+        self.conn.row_factory = sqlite3.Row
+
         result = self.conn.execute(fetch_active_session_sql)
         raw_active_session = result.fetchone()
-        if raw_active_session is None:
-            return None
-        _id, _active, project_name, start_time, end_time = raw_active_session
-        data = {
-            "project_name": project_name,
-            "start_time": start_time,
-            "end_time": end_time,
-        }
-        return Session.hydrate(data)
+
+        if raw_active_session is not None:
+            data = {
+                "project_name": raw_active_session["project_name"],
+                "start_time": raw_active_session["start_time"],
+                "end_time": raw_active_session["end_time"],
+            }
+            return Session.hydrate(data)
 
     def write_active_session(self, session: Session) -> None:
         self.write_session_with_project(session, active=True)
