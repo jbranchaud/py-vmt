@@ -588,8 +588,11 @@ def log(cli_ctx: CliContext):
         duration = time_helpers.format_time_delta(active_session.duration())
 
         project_name = active_session.project_name
+        tag_display = (
+            f" [{' '.join(active_session.tags)}]" if active_session.tags else ""
+        )
 
-        click.echo(f"  {start_time} - ...\t\t{duration}\t\t{project_name}")
+        click.echo(f"  {start_time} - ...\t\t{duration}\t\t{project_name}{tag_display}")
 
     yesterday = (datetime.now() - timedelta(days=1)).date()
     for session_date, sessions_for_day in sessions.items():
@@ -608,9 +611,10 @@ def log(cli_ctx: CliContext):
             elapsed_time = time_helpers.format_time_delta(session.duration())
 
             project_name = session.project_name
+            tag_display = f" [{' '.join(session.tags)}]" if session.tags else ""
 
             click.echo(
-                f"  {start_time} - {end_time}\t\t{elapsed_time}\t\t{project_name}"
+                f"  {start_time} - {end_time}\t\t{elapsed_time}\t\t{project_name}{tag_display}"
             )
 
         click.echo("")
