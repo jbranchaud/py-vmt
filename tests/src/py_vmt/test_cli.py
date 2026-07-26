@@ -73,6 +73,41 @@ def test_start_status_stop_flow():
             assert output in status_result.output
 
 
+def test_start_status_stop_flow_with_tags():
+    runner = BetterCliRunner()
+
+    initial_datetime = datetime.datetime(2026, 3, 14, 15, 5, 11, 0, datetime.UTC)
+    with freeze_time(initial_datetime) as frozen_datetime:
+        # start a session
+        tags = ["+meeting", "+after-hours"]
+        start_result = runner.invoke(cli, ["start", "my-project", *tags])
+        output = "Started tracking 'my-project' [meeting after-hours] at 10:05AM"
+        assert output in start_result.output
+
+        frozen_datetime.tick(delta=datetime.timedelta(minutes=30))
+
+        # check status
+        status_result = runner.invoke(cli, ["status"])
+        output = "Tracking 'my-project' [meeting after-hours] for 30m (since 10:05AM)"
+        assert output in status_result.output
+
+        frozen_datetime.tick(delta=datetime.timedelta(hours=1))
+
+        # stop a session
+        stop_result = runner.invoke(cli, ["stop"])
+        output = "Stopped tracking 'my-project' [meeting after-hours] (1h30m)"
+        assert output in stop_result.output
+
+        # status with recent seciont, but no active session
+        status_result = runner.invoke(cli, ["status"])
+        output_lines = [
+            "• Not tracking",
+            "Last: 'my-project' [meeting after-hours] (1h30m) at 10:05AM",
+        ]
+        for output in output_lines:
+            assert output in status_result.output
+
+
 def test_start_cancel_flow():
     runner = BetterCliRunner()
 

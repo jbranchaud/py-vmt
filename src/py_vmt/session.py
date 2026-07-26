@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 from py_vmt.time_helpers import find_nearest_timestamp_interval
@@ -8,13 +8,15 @@ from py_vmt.time_helpers import find_nearest_timestamp_interval
 class Session:
     start_time: datetime
     project_name: str
-    end_time: datetime | None = None
+    tags: list[str] = field(default_factory=list, kw_only=True)
+    end_time: datetime | None = field(default=None, kw_only=True)
 
     def __lt__(self, other):
         if not isinstance(other, Session):
             return NotImplemented
         return self.start_time < other.start_time
 
+    # TODO: Use or remove because nothing is calling this right now
     @staticmethod
     def start(project_name: str) -> "Session":
         return Session(datetime.now(UTC), project_name)
@@ -47,12 +49,15 @@ class Session:
         if "end_time" in data and data["end_time"] is not None:
             end_time = datetime.fromisoformat(data["end_time"])
 
-        return Session(start_time, data["project_name"], end_time)
+        return Session(
+            start_time,
+            data["project_name"],
+            tags=data.get("tags", []),
+            end_time=end_time,
+        )
 
     def marshal(self) -> dict:
-        marshalled_data = {
-            "project_name": self.project_name,
-        }
+        marshalled_data = {"project_name": self.project_name, "tags": self.tags}
 
         if self.start_time:
             marshalled_data["start_time"] = datetime.isoformat(self.start_time)

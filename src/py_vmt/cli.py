@@ -38,7 +38,12 @@ class SqliteRepository:
 
     def active_session(self) -> Session | None:
         fetch_active_session_sql = """
-            select sessions.id, sessions.active, projects.name as project_name, sessions.start_time, sessions.end_time
+            select
+                sessions.id as session_id,
+                sessions.active,
+                projects.name as project_name,
+                sessions.start_time,
+                sessions.end_time
             from sessions
             join projects on sessions.project_id = projects.id
             where sessions.active = 1;
@@ -48,9 +53,21 @@ class SqliteRepository:
         raw_active_session = result.fetchone()
 
         if raw_active_session is not None:
+            fetch_tags_for_active_session_sql = """
+                select tags.name
+                from tags
+                join session_tags on session_tags.tag_id = tags.id
+                where session_tags.session_id = ?;
+            """
+            result = self.conn.execute(
+                fetch_tags_for_active_session_sql, [raw_active_session["session_id"]]
+            )
+            tag_names = [row[0] for row in result.fetchall()]
+
             data = {
                 "project_name": raw_active_session["project_name"],
                 "start_time": raw_active_session["start_time"],
+                "tags": tag_names,
                 "end_time": raw_active_session["end_time"],
             }
             return Session.hydrate(data)
@@ -60,7 +77,12 @@ class SqliteRepository:
 
     def all_sessions(self) -> list[Session]:
         fetch_all_sessions_sql = """
-            select sessions.id, sessions.active, projects.name as project_name, sessions.start_time, sessions.end_time
+            select
+                sessions.id as session_id,
+                sessions.active,
+                projects.name as project_name,
+                sessions.start_time,
+                sessions.end_time
             from sessions
             join projects on sessions.project_id = projects.id;
         """
@@ -69,9 +91,22 @@ class SqliteRepository:
 
         sessions = []
         for raw_session in raw_sessions:
+            # TODO: this is an N+1, acceptable for now, but refactor later
+            fetch_tags_for_active_session_sql = """
+                select tags.name
+                from tags
+                join session_tags on session_tags.tag_id = tags.id
+                where session_tags.session_id = ?;
+            """
+            result = self.conn.execute(
+                fetch_tags_for_active_session_sql, [raw_session["session_id"]]
+            )
+            tag_names = [row[0] for row in result.fetchall()]
+
             data = {
                 "project_name": raw_session["project_name"],
                 "start_time": raw_session["start_time"],
+                "tags": tag_names,
                 "end_time": raw_session["end_time"],
             }
             sessions.append(Session.hydrate(data))
@@ -104,6 +139,19 @@ class SqliteRepository:
                     delete from sessions where active = 1;
                 """)
 
+            # Upsert tags if there are any
+            tag_ids = []
+            if session.tags:
+                # build the upsert query with the right number of slots
+                placeholders = ", ".join(["(?)"] * len(session.tags))
+                upsert_tags_sql = f"""
+                                insert into tags (name) values {placeholders}
+                                on conflict (name) do update set name = excluded.name
+                                returning id;
+                            """
+                cursor = self.conn.execute(upsert_tags_sql, session.tags)
+                tag_ids = [row[0] for row in cursor.fetchall()]
+
             # Upsert (find or create) the project based on `session.project_name`
             cursor = self.conn.execute(
                 """
@@ -127,13 +175,32 @@ class SqliteRepository:
                 session_data["end_time"] = datetime.isoformat(session.end_time)
 
             # Insert the new active session
-            self.conn.execute(
+            cursor = self.conn.execute(
                 """
                 insert into sessions (active, project_id, start_time, end_time)
-                values (:active, :project_id, :start_time, :end_time);
+                values (:active, :project_id, :start_time, :end_time)
+                returning id;
             """,
                 session_data,
             )
+            session_id = cursor.fetchone()[0]
+
+            if tag_ids:
+                # Apply tags to this session
+                placeholder = ", ".join(["(?, ?)"] * len(tag_ids))
+                # TODO: Figure out why the `on conflict do nothing` was needed, we shouldn't be inserting any duplicates
+                session_to_tags_sql = f"""
+                    insert into session_tags (session_id, tag_id) values {placeholder} on conflict do nothing;
+                """
+                # this is a list of tuples
+                # session_tag_pairs = [(session_id, tag_id) for tag_id in tag_ids]
+                #
+                # this is a flat list
+                sql_params = [
+                    param for tag_id in tag_ids for param in (session_id, tag_id)
+                ]
+                print(session_to_tags_sql)
+                self.conn.execute(session_to_tags_sql, sql_params)
 
 
 class JsonRepository:
@@ -188,8 +255,10 @@ class CliContext:
         self.repo = self._initialize_configured_repo(data_dir=self.data_dir)
         self.active_session = self.repo.active_session()
 
-    def start_active_session(self, project_name: str, start_time: datetime) -> None:
-        new_session = Session(start_time, project_name)
+    def start_active_session(
+        self, project_name: str, tags: list[str], start_time: datetime
+    ) -> None:
+        new_session = Session(start_time, project_name, tags=tags)
         self.repo.write_active_session(new_session)
 
     def stop_active_session(self, at: datetime, round: bool = False) -> Session:
@@ -345,8 +414,26 @@ def validate_start_at(_ctx, _param, value: str | None) -> datetime:
     return past_time
 
 
+class AcceptsTagsCommand(click.Command):
+    @staticmethod
+    def tag_shaped(arg: str) -> bool:
+        return len(arg) > 1 and arg.startswith("+")
+
+    def parse_args(self, ctx, args):
+        # remove `+` prefix and collect tags
+        tags = tuple(tag_arg[1:] for tag_arg in args if self.tag_shaped(tag_arg))
+        other_args = [arg for arg in args if not self.tag_shaped(arg)]
+
+        # process all other args first to let `ctx` settle
+        parsed_args = super().parse_args(ctx, other_args)
+
+        ctx.params["tags"] = tags
+
+        return parsed_args
+
+
 # define `start` subcommand
-@cli.command()
+@cli.command(cls=AcceptsTagsCommand)
 @click.argument("project-name")
 @click.option(
     "--at",
@@ -354,7 +441,9 @@ def validate_start_at(_ctx, _param, value: str | None) -> datetime:
     callback=validate_start_at,
 )
 @pass_cli
-def start(cli_ctx: CliContext, project_name: str, at: datetime) -> None:
+def start(
+    cli_ctx: CliContext, project_name: str, at: datetime, tags: list[str]
+) -> None:
     if cli_ctx.active_session:
         msg = f"Error: already tracking '{cli_ctx.active_session.project_name}'. Stop the current session first."
         click.echo(msg)
@@ -363,10 +452,14 @@ def start(cli_ctx: CliContext, project_name: str, at: datetime) -> None:
     formatted_start_time = time_helpers.format_timestamp(at)
 
     # • Started tracking 'visual-mode-tracking' [cli] at 11:11 AM
-    click.echo(f"• Started tracking '{project_name}' at {formatted_start_time}")
+    tag_display = f" [{' '.join(tags)}]" if tags else ""
+    click.echo(
+        f"• Started tracking '{project_name}'{tag_display} at {formatted_start_time}"
+    )
 
     cli_ctx.start_active_session(
         project_name,
+        tags,
         at,
     )
 
@@ -381,10 +474,9 @@ def status(cli_ctx: CliContext) -> None:
         time_diff = curr_time - sesh.start_time
         elapsed_time = time_helpers.format_time_delta(time_diff)
         started_at = time_helpers.format_timestamp(sesh.start_time)
+        tag_display = f" [{' '.join(sesh.tags)}]" if sesh.tags else ""
 
-        msg = (
-            f"• Tracking '{sesh.project_name}' for {elapsed_time} (since {started_at})"
-        )
+        msg = f"• Tracking '{sesh.project_name}'{tag_display} for {elapsed_time} (since {started_at})"
         click.echo(msg)
     else:
         # read in most recent session
@@ -397,8 +489,11 @@ def status(cli_ctx: CliContext) -> None:
             project_name = latest_sesh.project_name
             elapsed_time = time_helpers.format_time_delta(latest_sesh.duration())
             started_at = time_helpers.format_timestamp(latest_sesh.start_time)
+            tag_display = f" [{' '.join(latest_sesh.tags)}]" if latest_sesh.tags else ""
 
-            click.echo(f"Last: '{project_name}' ({elapsed_time}) at {started_at}")
+            click.echo(
+                f"Last: '{project_name}'{tag_display} ({elapsed_time}) at {started_at}"
+            )
 
 
 def validate_stop_at(ctx, _param, value: str | None) -> datetime:
@@ -448,8 +543,11 @@ def stop(cli_ctx: CliContext, at: datetime, round: bool) -> None:
     assert latest_sesh.end_time, "Expected this session to have an 'end_time' set"
 
     elapsed_time = time_helpers.format_time_delta(latest_sesh.duration())
+    tag_display = f" [{' '.join(latest_sesh.tags)}]" if latest_sesh.tags else ""
 
-    click.echo(f"• Stopped tracking '{latest_sesh.project_name}' ({elapsed_time})")
+    click.echo(
+        f"• Stopped tracking '{latest_sesh.project_name}'{tag_display} ({elapsed_time})"
+    )
 
 
 # define `cancel` subcommand
