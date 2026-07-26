@@ -395,7 +395,7 @@ def test_log_recent_activity():
     initial_datetime = datetime.datetime(2026, 3, 14, 15, 5, 11, 0, datetime.UTC)
     with freeze_time(initial_datetime) as frozen_datetime:
         # record 8 hour session
-        runner.invoke(cli, ["start", "TIL"])
+        runner.invoke(cli, ["start", "TIL", "+writing", "+learning"])
         frozen_datetime.tick(delta=datetime.timedelta(hours=8))
         runner.invoke(cli, ["stop"])
 
@@ -407,7 +407,7 @@ def test_log_recent_activity():
         frozen_datetime.tick(delta=datetime.timedelta(hours=4, minutes=32))
         runner.invoke(cli, ["stop"])
         frozen_datetime.tick(delta=datetime.timedelta(minutes=28))
-        runner.invoke(cli, ["start", "TIL"])
+        runner.invoke(cli, ["start", "TIL", "+writing", "+learning"])
         frozen_datetime.tick(delta=datetime.timedelta(hours=3, minutes=3))
         runner.invoke(cli, ["stop"])
 
@@ -415,11 +415,11 @@ def test_log_recent_activity():
         frozen_datetime.tick(delta=datetime.timedelta(hours=14))
 
         # record one more day
-        runner.invoke(cli, ["start", "Client A", "--at", "33 minutes ago"])
+        runner.invoke(cli, ["start", "Client A", "+meeting", "--at", "33 minutes ago"])
         frozen_datetime.tick(delta=datetime.timedelta(hours=6))
         runner.invoke(cli, ["stop"])
         frozen_datetime.tick(delta=datetime.timedelta(minutes=15))
-        runner.invoke(cli, ["start", "TIL"])
+        runner.invoke(cli, ["start", "TIL", "+writing"])
         frozen_datetime.tick(delta=datetime.timedelta(minutes=28))
         runner.invoke(cli, ["stop"])
 
@@ -430,15 +430,15 @@ def test_log_recent_activity():
 
         expected_log_output = """Session Log
 Yesterday
-  4:35AM - 11:08AM		6h33m		Client A
-  11:23AM - 11:51AM		28m		TIL
+  4:35AM - 11:08AM		6h33m		Client A [meeting]
+  11:23AM - 11:51AM		28m		TIL [writing]
 
 Sunday, March 15
   7:05AM - 11:37AM		4h32m		still
-  12:05PM - 3:08PM		3h3m		TIL
+  12:05PM - 3:08PM		3h3m		TIL [writing learning]
 
 Saturday, March 14
-  10:05AM - 6:05PM		8h		TIL
+  10:05AM - 6:05PM		8h		TIL [writing learning]
 """
 
         log_output_by_line = log_result.output.split("\n")
