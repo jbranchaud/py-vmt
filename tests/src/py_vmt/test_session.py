@@ -15,11 +15,20 @@ def test_new_session():
     assert not sesh.end_time
 
 
+def test_new_session_with_tags():
+    now = datetime.now()
+    sesh = Session(now, "TIL", tags=["writing", "learning"])
+
+    assert sesh.start_time == now
+    assert sesh.project_name == "TIL"
+    assert sesh.tags == ["writing", "learning"]
+
+
 def test_new_session_with_end_time():
     now = datetime.now()
     earlier = now - timedelta(hours=3)
 
-    sesh = Session(earlier, "TIL", now)
+    sesh = Session(earlier, "TIL", end_time=now)
 
     assert sesh.start_time == earlier
     assert sesh.project_name == "TIL"
@@ -110,6 +119,7 @@ def test_hydrate():
 
     assert sesh.start_time == expected_start
     assert sesh.project_name == "TIL"
+    assert sesh.tags == []
     assert sesh.end_time == expected_end
 
 
@@ -126,6 +136,25 @@ def test_hydrate_without_end_time():
     assert sesh.start_time == expected_start
     assert sesh.project_name == "TIL"
     assert not sesh.end_time
+
+
+def test_hydrate_with_tags():
+    sesh_data = {
+        "start_time": "2026-03-14T15:05:11+00:00",
+        "project_name": "TIL",
+        "tags": ["writing", "learning"],
+        "end_time": "2026-03-14T18:05:11+00:00",
+    }
+
+    sesh = Session.hydrate(sesh_data)
+
+    expected_start = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
+    expected_end = datetime(2026, 3, 14, 18, 5, 11, 0, UTC)
+
+    assert sesh.start_time == expected_start
+    assert sesh.project_name == "TIL"
+    assert sesh.tags == ["writing", "learning"]
+    assert sesh.end_time == expected_end
 
 
 def test_hydrate_with_no_start_time():
