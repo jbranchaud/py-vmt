@@ -1,6 +1,8 @@
-from datetime import datetime, timedelta, timezone
-from freezegun import freeze_time
+from datetime import UTC, datetime, timedelta
+
 import pytest
+from freezegun import freeze_time
+
 from py_vmt.session import Session
 
 
@@ -25,7 +27,7 @@ def test_new_session_with_end_time():
 
 
 def test_start():
-    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
+    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
     with freeze_time(initial_datetime):
         sesh = Session.start("TIL")
 
@@ -35,7 +37,7 @@ def test_start():
 
 
 def test_start_then_stop():
-    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
+    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
     with freeze_time(initial_datetime) as frozen_datetime:
         sesh = Session.start("TIL")
 
@@ -49,7 +51,7 @@ def test_start_then_stop():
 
 
 def test_duration():
-    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
+    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
     with freeze_time(initial_datetime) as frozen_datetime:
         sesh = Session.start("TIL")
 
@@ -59,7 +61,7 @@ def test_duration():
 
 
 def test_duration_after_stop():
-    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
+    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
     with freeze_time(initial_datetime) as frozen_datetime:
         sesh = Session.start("TIL")
 
@@ -73,7 +75,7 @@ def test_duration_after_stop():
 
 
 def test_marshal():
-    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
+    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
     with freeze_time(initial_datetime) as frozen_datetime:
         sesh = Session.start("TIL")
 
@@ -103,8 +105,8 @@ def test_hydrate():
 
     sesh = Session.hydrate(sesh_data)
 
-    expected_start = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
-    expected_end = datetime(2026, 3, 14, 18, 5, 11, 0, timezone.utc)
+    expected_start = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
+    expected_end = datetime(2026, 3, 14, 18, 5, 11, 0, UTC)
 
     assert sesh.start_time == expected_start
     assert sesh.project_name == "TIL"
@@ -119,7 +121,7 @@ def test_hydrate_without_end_time():
 
     sesh = Session.hydrate(sesh_data)
 
-    expected_start = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
+    expected_start = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
 
     assert sesh.start_time == expected_start
     assert sesh.project_name == "TIL"
