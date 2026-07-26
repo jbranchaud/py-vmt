@@ -430,15 +430,15 @@ def test_log_recent_activity():
 
         expected_log_output = """Session Log
 Yesterday
-  4:35AM - 11:08AM		6h33m		Client A [meeting]
-  11:23AM - 11:51AM		28m		TIL [writing]
+  4:35AM - 11:08AM		6h33m		'Client A' [meeting]
+  11:23AM - 11:51AM		28m		'TIL' [writing]
 
 Sunday, March 15
-  7:05AM - 11:37AM		4h32m		still
-  12:05PM - 3:08PM		3h3m		TIL [writing learning]
+  7:05AM - 11:37AM		4h32m		'still'
+  12:05PM - 3:08PM		3h3m		'TIL' [writing learning]
 
 Saturday, March 14
-  10:05AM - 6:05PM		8h		TIL [writing learning]
+  10:05AM - 6:05PM		8h		'TIL' [writing learning]
 """
 
         log_output_by_line = log_result.output.split("\n")

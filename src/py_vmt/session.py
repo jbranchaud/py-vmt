@@ -42,6 +42,10 @@ class Session:
 
         return lhs_time - self.start_time
 
+    def description(self) -> str:
+        tag_display = f" [{' '.join(self.tags)}]" if self.tags else ""
+        return f"'{self.project_name}'{tag_display}"
+
     @staticmethod
     def hydrate(data: dict) -> "Session":
         start_time = datetime.fromisoformat(data["start_time"])

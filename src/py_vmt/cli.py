@@ -451,16 +451,16 @@ def start(
 
     formatted_start_time = time_helpers.format_timestamp(at)
 
-    # • Started tracking 'visual-mode-tracking' [cli] at 11:11 AM
-    tag_display = f" [{' '.join(tags)}]" if tags else ""
-    click.echo(
-        f"• Started tracking '{project_name}'{tag_display} at {formatted_start_time}"
-    )
-
     cli_ctx.start_active_session(
         project_name,
         tags,
         at,
+    )
+
+    temp_sesh = Session(at, project_name, tags=tags)
+    # • Started tracking 'visual-mode-tracking' [cli] at 11:11 AM
+    click.echo(
+        f"• Started tracking {temp_sesh.description()} at {formatted_start_time}"
     )
 
 
@@ -474,9 +474,8 @@ def status(cli_ctx: CliContext) -> None:
         time_diff = curr_time - sesh.start_time
         elapsed_time = time_helpers.format_time_delta(time_diff)
         started_at = time_helpers.format_timestamp(sesh.start_time)
-        tag_display = f" [{' '.join(sesh.tags)}]" if sesh.tags else ""
 
-        msg = f"• Tracking '{sesh.project_name}'{tag_display} for {elapsed_time} (since {started_at})"
+        msg = f"• Tracking {sesh.description()} for {elapsed_time} (since {started_at})"
         click.echo(msg)
     else:
         # read in most recent session
@@ -486,13 +485,11 @@ def status(cli_ctx: CliContext) -> None:
         # Last: 'my-project' (1h30m) at 8:37AM
         click.echo("• Not tracking")
         if latest_sesh:
-            project_name = latest_sesh.project_name
             elapsed_time = time_helpers.format_time_delta(latest_sesh.duration())
             started_at = time_helpers.format_timestamp(latest_sesh.start_time)
-            tag_display = f" [{' '.join(latest_sesh.tags)}]" if latest_sesh.tags else ""
 
             click.echo(
-                f"Last: '{project_name}'{tag_display} ({elapsed_time}) at {started_at}"
+                f"Last: {latest_sesh.description()} ({elapsed_time}) at {started_at}"
             )
 
 
@@ -543,11 +540,8 @@ def stop(cli_ctx: CliContext, at: datetime, round: bool) -> None:
     assert latest_sesh.end_time, "Expected this session to have an 'end_time' set"
 
     elapsed_time = time_helpers.format_time_delta(latest_sesh.duration())
-    tag_display = f" [{' '.join(latest_sesh.tags)}]" if latest_sesh.tags else ""
 
-    click.echo(
-        f"• Stopped tracking '{latest_sesh.project_name}'{tag_display} ({elapsed_time})"
-    )
+    click.echo(f"• Stopped tracking {latest_sesh.description()} ({elapsed_time})")
 
 
 # define `cancel` subcommand
@@ -555,15 +549,13 @@ def stop(cli_ctx: CliContext, at: datetime, round: bool) -> None:
 @pass_cli
 def cancel(cli_ctx: CliContext):
     cancelled_sesh = cli_ctx.cancel_active_session()
-    project_name = cancelled_sesh.project_name
 
     assert cancelled_sesh.end_time, "Expected this session to have an 'end_time' set"
 
     elapsed_time = time_helpers.format_time_delta(cancelled_sesh.duration())
-    tag_display = f" [{' '.join(cancelled_sesh.tags)}]" if cancelled_sesh.tags else ""
 
     click.echo(
-        f"• Cancelled session for '{project_name}'{tag_display} ({elapsed_time})"
+        f"• Cancelled session for {cancelled_sesh.description()} ({elapsed_time})"
     )
 
 
@@ -587,12 +579,9 @@ def log(cli_ctx: CliContext):
 
         duration = time_helpers.format_time_delta(active_session.duration())
 
-        project_name = active_session.project_name
-        tag_display = (
-            f" [{' '.join(active_session.tags)}]" if active_session.tags else ""
+        click.echo(
+            f"  {start_time} - ...\t\t{duration}\t\t{active_session.description()}"
         )
-
-        click.echo(f"  {start_time} - ...\t\t{duration}\t\t{project_name}{tag_display}")
 
     yesterday = (datetime.now() - timedelta(days=1)).date()
     for session_date, sessions_for_day in sessions.items():
@@ -610,11 +599,8 @@ def log(cli_ctx: CliContext):
 
             elapsed_time = time_helpers.format_time_delta(session.duration())
 
-            project_name = session.project_name
-            tag_display = f" [{' '.join(session.tags)}]" if session.tags else ""
-
             click.echo(
-                f"  {start_time} - {end_time}\t\t{elapsed_time}\t\t{project_name}{tag_display}"
+                f"  {start_time} - {end_time}\t\t{elapsed_time}\t\t{session.description()}"
             )
 
         click.echo("")
