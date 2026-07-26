@@ -1,6 +1,8 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timezone, timedelta
-from py_vmt.time_helpers import format_time_delta, find_nearest_timestamp_interval
+
+from py_vmt.time_helpers import find_nearest_timestamp_interval, format_time_delta
 
 
 @pytest.mark.parametrize(
@@ -35,7 +37,7 @@ def test_format_time_delta(input, expected):
     ],
 )
 def test_find_nearest_timestamp_interval(input: timedelta, expected_diff: timedelta):
-    start_time = datetime(2026, 3, 14, 15, 5, 11, 0, timezone.utc)
+    start_time = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
     end_time = start_time + input
 
     result = find_nearest_timestamp_interval(

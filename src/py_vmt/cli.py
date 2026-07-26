@@ -1,17 +1,17 @@
 import collections
-from datetime import date, datetime, timedelta, timezone
 import json
+import sqlite3
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from sqlite3 import Connection
-import sqlite3
 from typing import Protocol
-from platformdirs import user_data_dir, user_config_dir
-import click
-from py_vmt import time_helpers
-from py_vmt.session import Session
-from py_vmt.file_utils import atomic_write
-from py_vmt import db
 
+import click
+from platformdirs import user_config_dir, user_data_dir
+
+from py_vmt import db, time_helpers
+from py_vmt.file_utils import atomic_write
+from py_vmt.session import Session
 
 type DateToSessionDict = collections.defaultdict[date, list[Session]]
 
@@ -332,7 +332,7 @@ def cli(ctx: click.Context, verbose: bool):
 
 
 def validate_start_at(_ctx, _param, value: str | None) -> datetime:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if value is None:
         return now
@@ -377,7 +377,7 @@ def start(cli_ctx: CliContext, project_name: str, at: datetime) -> None:
 def status(cli_ctx: CliContext) -> None:
     sesh = cli_ctx.active_session
     if sesh:
-        curr_time = datetime.now(timezone.utc)
+        curr_time = datetime.now(UTC)
         time_diff = curr_time - sesh.start_time
         elapsed_time = time_helpers.format_time_delta(time_diff)
         started_at = time_helpers.format_timestamp(sesh.start_time)
@@ -402,7 +402,7 @@ def status(cli_ctx: CliContext) -> None:
 
 
 def validate_stop_at(ctx, _param, value: str | None) -> datetime:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if value is None:
         return now
