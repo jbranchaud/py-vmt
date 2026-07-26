@@ -35,6 +35,20 @@ def test_new_session_with_end_time():
     assert sesh.end_time == now
 
 
+def test_description():
+    now = datetime.now()
+    sesh = Session(now, "TIL")
+
+    assert sesh.description() == "'TIL'"
+
+
+def test_description_with_tags():
+    now = datetime.now()
+    sesh = Session(now, "TIL", tags=["writing", "learning"])
+
+    assert sesh.description() == "'TIL' [writing learning]"
+
+
 def test_start():
     initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
     with freeze_time(initial_datetime):
