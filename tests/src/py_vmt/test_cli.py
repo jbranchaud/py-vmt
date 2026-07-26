@@ -176,6 +176,34 @@ def test_start_at_past_time():
         assert output in status_result.output
 
 
+def test_start_with_scattered_tags():
+    runner = BetterCliRunner()
+
+    initial_datetime = datetime.datetime(2026, 3, 14, 15, 5, 11, 0, datetime.UTC)
+    with freeze_time(initial_datetime) as frozen_datetime:
+        # start a session
+        start_result = runner.invoke(
+            cli,
+            [
+                "start",
+                "my-project",
+                "+meeting",
+                "--at",
+                "'33 minutes ago'",
+                "+after-hours",
+            ],
+        )
+        output = "Started tracking 'my-project' [meeting after-hours] at 9:32AM"
+        assert output in start_result.output
+
+        frozen_datetime.tick(delta=datetime.timedelta(minutes=30))
+
+        # check status
+        status_result = runner.invoke(cli, ["status"])
+        output = "Tracking 'my-project' [meeting after-hours] for 1h3m (since 9:32AM)"
+        assert output in status_result.output
+
+
 def test_start_at_in_future():
     runner = BetterCliRunner()
 
