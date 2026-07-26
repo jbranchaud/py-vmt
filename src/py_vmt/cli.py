@@ -560,7 +560,11 @@ def cancel(cli_ctx: CliContext):
     assert cancelled_sesh.end_time, "Expected this session to have an 'end_time' set"
 
     elapsed_time = time_helpers.format_time_delta(cancelled_sesh.duration())
-    click.echo(f"• Cancelled session for '{project_name}' ({elapsed_time})")
+    tag_display = f" [{' '.join(cancelled_sesh.tags)}]" if cancelled_sesh.tags else ""
+
+    click.echo(
+        f"• Cancelled session for '{project_name}'{tag_display} ({elapsed_time})"
+    )
 
 
 # define `log` subcommand

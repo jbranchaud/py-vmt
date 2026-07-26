@@ -126,6 +126,25 @@ def test_start_cancel_flow():
         assert output in cancel_result.output
 
 
+def test_start_cancel_flow_with_tags():
+    runner = BetterCliRunner()
+
+    initial_datetime = datetime.datetime(2026, 3, 14, 15, 5, 11, 0, datetime.UTC)
+    with freeze_time(initial_datetime) as frozen_datetime:
+        # start a session
+        tags = ["+meeting", "+after-hours"]
+        start_result = runner.invoke(cli, ["start", "my-project", *tags])
+        output = "Started tracking 'my-project' [meeting after-hours] at 10:05AM"
+        assert output in start_result.output
+
+        frozen_datetime.tick(delta=datetime.timedelta(minutes=30))
+
+        # cancel session
+        cancel_result = runner.invoke(cli, ["cancel"])
+        output = "Cancelled session for 'my-project' [meeting after-hours] (30m)"
+        assert output in cancel_result.output
+
+
 def test_cancel_without_active_session():
     runner = BetterCliRunner()
 
