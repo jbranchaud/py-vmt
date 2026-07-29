@@ -431,11 +431,18 @@ class AcceptsTagsCommand(click.Command):
 
         return parsed_args
 
+    # Add tags to usage line because Click won't automatically pick it since it
+    # is not using the option decorator syntax.
+    # e.g. `Usage: vmt start [OPTIONS] PROJECT_NAME [+TAG]...`
     def collect_usage_pieces(self, ctx):
         pieces = super().collect_usage_pieces(ctx)
         pieces.append("[+TAG]...")
         return pieces
 
+    # Similarly, include a `Tags` section below options that explains the `+TAG` option.
+    # e.g.
+    # Tags:
+    #  +TAG  Attach one or more tags, e.g. +meeting +engineering
     def format_options(self, ctx, formatter):
         super().format_options(ctx, formatter)
         with formatter.section("Tags"):
