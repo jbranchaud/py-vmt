@@ -431,6 +431,18 @@ class AcceptsTagsCommand(click.Command):
 
         return parsed_args
 
+    def collect_usage_pieces(self, ctx):
+        pieces = super().collect_usage_pieces(ctx)
+        pieces.append("[+TAG]...")
+        return pieces
+
+    def format_options(self, ctx, formatter):
+        super().format_options(ctx, formatter)
+        with formatter.section("Tags"):
+            formatter.write_dl(
+                [("+TAG", "Attach one or more tags, e.g. +meeting +engineering")]
+            )
+
 
 # define `start` subcommand
 @cli.command(cls=AcceptsTagsCommand)
