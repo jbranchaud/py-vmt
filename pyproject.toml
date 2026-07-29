@@ -3,6 +3,8 @@ name = "py-vmt"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = ["click>=8.3.1", "dateparser>=1.3.0", "platformdirs>=4.9.4"]
 [dependency-groups]
