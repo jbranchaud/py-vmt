@@ -1,4 +1,11 @@
+import os
+import time
 from click.testing import CliRunner
+
+
+# Set the timezone that all tests run in
+os.environ.setdefault("TZ", "America/Chicago")
+time.tzset()
 
 
 class BetterCliRunner(CliRunner):
