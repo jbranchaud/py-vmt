@@ -392,6 +392,7 @@ pass_cli = click.make_pass_decorator(CliContext)
     is_flag=True,
 )
 @click.pass_context
+@click.version_option(prog_name="vmt")
 def cli(ctx: click.Context, verbose: bool):
     ctx.ensure_object(dict)
     ctx.obj = CliContext(verbose=verbose)
