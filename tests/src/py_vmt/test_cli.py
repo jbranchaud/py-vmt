@@ -457,6 +457,7 @@ def test_base_help_message():
 
         Options:
           -v, --verbose  See extra output when running commands
+          --version      Show the version and exit.
           --help         Show this message and exit.
 
         Commands:
