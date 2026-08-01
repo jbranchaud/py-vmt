@@ -1,0 +1,18 @@
+# Tokens live in mise.local.toml (gitignored). See mise.local.toml.example.
+
+[tools]
+uv = "latest"
+
+[tasks.build]
+description = "build sdist + wheel from a clean dist/"
+run = ["rm -rf dist", "uv build"]
+
+[tasks.publish-test]
+description = "publish to TestPyPI"
+depends = ["build"]
+run = 'uv publish --publish-url https://test.pypi.org/legacy/ --token "$TEST_PYPI_TOKEN"'
+
+[tasks.publish]
+description = "publish to PyPI"
+depends = ["build"]
+run = 'uv publish --token "$PYPI_TOKEN"'
