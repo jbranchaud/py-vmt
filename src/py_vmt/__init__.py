@@ -1,3 +1,3 @@
 import importlib.metadata
 
-__version__ = importlib.metadata.version("py_vmt")
+__version__ = importlib.metadata.version("visualmode-tracker")
