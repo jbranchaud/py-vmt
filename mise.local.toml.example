@@ -1,0 +1,5 @@
+# Copy to mise.local.toml and paste in real tokens. Never commit mise.local.toml.
+
+[env]
+TEST_PYPI_TOKEN = "pypi-..."
+PYPI_TOKEN = "pypi-..."
