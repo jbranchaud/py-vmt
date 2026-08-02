@@ -14,3 +14,16 @@ run = 'uv publish --publish-url https://test.pypi.org/legacy/ --token "$TEST_PYP
 
 # No publish-to-PyPI task on purpose: real releases go through the tag-triggered
 # .github/workflows/release.yml, which uses Trusted Publishing (OIDC, no token).
+
+[tasks.gh-release]
+description = "tag, push, and create a GitHub release from the latest CHANGELOG.md section"
+run = '''
+set -euo pipefail
+ver=$(sed -n 's/^## \[\([0-9][^]]*\)\].*/\1/p' CHANGELOG.md | head -1)
+tag="v$ver"
+notes=$(awk '/^## \[[0-9]/ {if (f) exit; f=1; next} f && /^\[/ {exit} f' CHANGELOG.md)
+
+git rev-parse -q --verify "refs/tags/$tag" >/dev/null || git tag -a "$tag" -m "Release $tag"
+git push origin "$tag"
+gh release create "$tag" --title "$tag" --notes "$notes"
+'''
