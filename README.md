@@ -1,5 +1,7 @@
 # VisualMode Tracker, built with Python
 
+> A command-line time tracker for your project and work sessions
+
 ## Development
 
 Run the CLI in development with `uv`:
