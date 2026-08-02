@@ -312,6 +312,9 @@ class CliContext:
                 sessions_grouped_by_day[previous_date] = sessions_for_date
 
         return sessions_grouped_by_day
+        # TODO: determine if there is anything to preserve from the following
+        # comment, otherwise delete it.
+        #
         # find all sessions in the last 7 days
         #
         # Note: we care about local time, not UTC
