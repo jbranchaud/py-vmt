@@ -199,7 +199,6 @@ class SqliteRepository:
                 sql_params = [
                     param for tag_id in tag_ids for param in (session_id, tag_id)
                 ]
-                print(session_to_tags_sql)
                 self.conn.execute(session_to_tags_sql, sql_params)
 
 
