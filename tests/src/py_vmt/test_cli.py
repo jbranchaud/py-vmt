@@ -6,11 +6,7 @@ import pytest
 from conftest import BetterCliRunner
 from freezegun import freeze_time
 
-from py_vmt.cli import CliContext, cli
-
-# TODO: we will probably define a canonical list in some shared spot
-# that this file can pull in.
-STORAGE_FORMATS = ["json", "sqlite"]
+from py_vmt.cli import CliContext, cli, STORAGE_FORMATS
 
 
 # Sort of documented here: https://docs.pytest.org/en/stable/example/parametrize.html#parametrization-with-multiple-fixtures

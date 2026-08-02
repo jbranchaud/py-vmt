@@ -15,6 +15,11 @@ from py_vmt.session import Session
 
 type DateToSessionDict = collections.defaultdict[date, list[Session]]
 
+SQLITE_STORAGE_FORMAT_KEY = "sqlite"
+JSON_STORAGE_FORMAT_KEY = "json"
+DEFAULT_STORAGE_FORMAT = SQLITE_STORAGE_FORMAT_KEY
+STORAGE_FORMATS = [DEFAULT_STORAGE_FORMAT, JSON_STORAGE_FORMAT_KEY]
+
 
 class SessionRepository(Protocol):
     def active_session(self) -> Session | None: ...
@@ -367,13 +372,12 @@ class CliContext:
         return {}
 
     _REPOS: dict[str, type[SessionRepository]] = {
-        "json": JsonRepository,
-        "sqlite": SqliteRepository,
+        JSON_STORAGE_FORMAT_KEY: JsonRepository,
+        SQLITE_STORAGE_FORMAT_KEY: SqliteRepository,
     }
 
     def _initialize_configured_repo(self, **config) -> SessionRepository:
-        default_format = "sqlite"
-        format = self.config.get("storage_format", default_format)
+        format = self.config.get("storage_format", DEFAULT_STORAGE_FORMAT)
         try:
             return self._REPOS[format](**config)
         except KeyError:
