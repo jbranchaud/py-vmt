@@ -49,20 +49,10 @@ def test_description_with_tags():
     assert sesh.description() == "'TIL' [writing learning]"
 
 
-def test_start():
-    initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
-    with freeze_time(initial_datetime):
-        sesh = Session.start("TIL")
-
-        assert sesh.start_time == initial_datetime
-        assert sesh.project_name == "TIL"
-        assert not sesh.end_time
-
-
-def test_start_then_stop():
+def test_create_then_stop():
     initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
     with freeze_time(initial_datetime) as frozen_datetime:
-        sesh = Session.start("TIL")
+        sesh = Session(datetime.now(UTC), "TIL")
 
         assert not sesh.end_time
 
@@ -76,7 +66,7 @@ def test_start_then_stop():
 def test_duration():
     initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
     with freeze_time(initial_datetime) as frozen_datetime:
-        sesh = Session.start("TIL")
+        sesh = Session(datetime.now(UTC), "TIL")
 
         frozen_datetime.tick(delta=timedelta(hours=3, minutes=4, seconds=5))
 
@@ -86,7 +76,7 @@ def test_duration():
 def test_duration_after_stop():
     initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
     with freeze_time(initial_datetime) as frozen_datetime:
-        sesh = Session.start("TIL")
+        sesh = Session(datetime.now(UTC), "TIL")
 
         frozen_datetime.tick(delta=timedelta(hours=3, minutes=4, seconds=5))
 
@@ -100,7 +90,7 @@ def test_duration_after_stop():
 def test_marshal():
     initial_datetime = datetime(2026, 3, 14, 15, 5, 11, 0, UTC)
     with freeze_time(initial_datetime) as frozen_datetime:
-        sesh = Session.start("TIL")
+        sesh = Session(datetime.now(UTC), "TIL")
 
         sesh_data = sesh.marshal()
 
