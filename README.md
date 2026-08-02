@@ -2,6 +2,33 @@
 
 > A command-line time tracker for your project and work sessions
 
+## Usage
+
+Standard usage of `vmt` is to `start` a session by name (e.g. `py-vmt`) with
+zero or more tags (e.g. `+python`) while you work. You can always check the
+`status`. When you are done with a session, you can `stop` it. Check the `log`
+to see what sessions you have tracked over the last 7 days.
+
+```bash
+❯ vmt start py-vmt +python --at "14 minutes ago"
+• Started tracking 'py-vmt' [python] at 12:00PM
+
+❯ vmt status
+• Tracking 'py-vmt' [python] for 27m20s (since 12:00PM)
+
+❯ vmt stop --round
+• Stopped tracking 'py-vmt' [python] (30m)
+
+❯ vmt log
+Session Log
+Sunday, August 02
+  12:00PM - 12:30PM		30m		'py-vmt' [python]
+
+❯ vmt status
+• Not tracking
+Last: 'py-vmt' [python] (30m) at 12:00PM
+```
+
 ## Installation
 
 `vmt` (`visualmode-tracker`) can be installed via `uv` and `pipx`:
