@@ -16,11 +16,6 @@ class Session:
             return NotImplemented
         return self.start_time < other.start_time
 
-    # TODO: Use or remove because nothing is calling this right now
-    @staticmethod
-    def start(project_name: str) -> "Session":
-        return Session(datetime.now(UTC), project_name)
-
     def round_end_time(
         self, exact_end_time: datetime, interval: timedelta = timedelta(minutes=15)
     ) -> datetime:
