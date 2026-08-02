@@ -12,7 +12,5 @@ description = "publish to TestPyPI"
 depends = ["build"]
 run = 'uv publish --publish-url https://test.pypi.org/legacy/ --token "$TEST_PYPI_TOKEN"'
 
-[tasks.publish]
-description = "publish to PyPI"
-depends = ["build"]
-run = 'uv publish --token "$PYPI_TOKEN"'
+# No publish-to-PyPI task on purpose: real releases go through the tag-triggered
+# .github/workflows/release.yml, which uses Trusted Publishing (OIDC, no token).
