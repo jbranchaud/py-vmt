@@ -1,5 +1,5 @@
-from py_vmt.cli import STORAGE_FORMATS, CliContext
+from py_vmt.cli import StorageFormat, CliContext
 
 
 def test_storage_formats_match_repo_registry():
-    assert sorted(list(CliContext._REPOS)) == sorted(STORAGE_FORMATS)
+    assert sorted(list(CliContext._REPOS)) == sorted(list(StorageFormat))

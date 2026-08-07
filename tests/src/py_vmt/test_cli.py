@@ -5,11 +5,11 @@ import pytest
 from conftest import BetterCliRunner
 from freezegun import freeze_time
 
-from py_vmt.cli import CliContext, cli, STORAGE_FORMATS
+from py_vmt.cli import CliContext, cli, StorageFormat
 
 
 # Sort of documented here: https://docs.pytest.org/en/stable/example/parametrize.html#parametrization-with-multiple-fixtures
-@pytest.fixture(params=STORAGE_FORMATS)
+@pytest.fixture(params=list(StorageFormat))
 def storage_format(request) -> str:
     return request.param
 
