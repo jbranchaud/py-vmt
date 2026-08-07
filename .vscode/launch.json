@@ -20,6 +20,16 @@
       "justMyCode": false
     },
     {
+      "name": "Debug vmt CLI",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "py_vmt.cli",
+      "args": ["status"],
+      "env": { "PYTHONPATH": "${workspaceFolder}/src" },
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
       "name": "Attach to debugpy",
       "type": "debugpy",
       "request": "attach",
