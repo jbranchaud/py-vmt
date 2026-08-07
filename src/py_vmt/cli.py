@@ -1,8 +1,10 @@
 import collections
+from enum import StrEnum
 import json
 import sqlite3
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from pydantic import BaseModel
 from sqlite3 import Connection
 from typing import Protocol
 
@@ -19,6 +21,19 @@ SQLITE_STORAGE_FORMAT_KEY = "sqlite"
 JSON_STORAGE_FORMAT_KEY = "json"
 DEFAULT_STORAGE_FORMAT = SQLITE_STORAGE_FORMAT_KEY
 STORAGE_FORMATS = [DEFAULT_STORAGE_FORMAT, JSON_STORAGE_FORMAT_KEY]
+
+
+class StorageFormat(StrEnum):
+    SQLITE = "sqlite"
+    JSON = "json"
+
+    @staticmethod
+    def default():
+        return StorageFormat.SQLITE
+
+
+class ConfigFile(BaseModel):
+    storage_format: StorageFormat = StorageFormat.default()
 
 
 class SessionRepository(Protocol):
@@ -362,14 +377,15 @@ class CliContext:
         return path
 
     @staticmethod
-    def read_config() -> dict:
+    def read_config() -> ConfigFile:
         config_dir: Path = CliContext.get_config_dir()
         config_file: Path = config_dir / "config.json"
 
         if config_file.exists():
-            return json.loads(config_file.read_text())
+            raw_json = config_file.read_text()
+            return ConfigFile.model_validate_json(raw_json)
 
-        return {}
+        return ConfigFile()
 
     _REPOS: dict[str, type[SessionRepository]] = {
         JSON_STORAGE_FORMAT_KEY: JsonRepository,
@@ -377,7 +393,7 @@ class CliContext:
     }
 
     def _initialize_configured_repo(self, **config) -> SessionRepository:
-        format = self.config.get("storage_format", DEFAULT_STORAGE_FORMAT)
+        format = self.config.storage_format
         try:
             return self._REPOS[format](**config)
         except KeyError:
