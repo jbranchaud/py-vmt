@@ -17,11 +17,6 @@ from py_vmt.session import Session
 
 type DateToSessionDict = collections.defaultdict[date, list[Session]]
 
-SQLITE_STORAGE_FORMAT_KEY = "sqlite"
-JSON_STORAGE_FORMAT_KEY = "json"
-DEFAULT_STORAGE_FORMAT = SQLITE_STORAGE_FORMAT_KEY
-STORAGE_FORMATS = [DEFAULT_STORAGE_FORMAT, JSON_STORAGE_FORMAT_KEY]
-
 
 class StorageFormat(StrEnum):
     SQLITE = "sqlite"
@@ -388,8 +383,8 @@ class CliContext:
         return ConfigFile()
 
     _REPOS: dict[str, type[SessionRepository]] = {
-        JSON_STORAGE_FORMAT_KEY: JsonRepository,
-        SQLITE_STORAGE_FORMAT_KEY: SqliteRepository,
+        StorageFormat.JSON: JsonRepository,
+        StorageFormat.SQLITE: SqliteRepository,
     }
 
     def _initialize_configured_repo(self, **config) -> SessionRepository:
