@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `vmt config --init` to generate a config file with default settings, printing
+  its location (and a notice if one already exists).
+
+### Changed
+
+- Config file parsing now uses pydantic to validate settings, with a
+  `StorageFormat` enum (`sqlite`, `json`) for the storage format.
+
 ## [0.1.0] - 2026-08-02
 
 ### Added
