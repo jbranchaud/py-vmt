@@ -27,8 +27,41 @@ class StorageFormat(StrEnum):
         return cls.SQLITE
 
 
-class ConfigFile(BaseModel):
+class CliConfig(BaseModel):
     storage_format: StorageFormat = StorageFormat.default()
+
+
+class ConfigFile:
+    def __init__(self):
+        self.config_file: Path = self._get_config_file()
+        self.config: CliConfig = self._read_config()
+
+    def exists(self) -> bool:
+        return self.config_file.exists()
+
+    def location(self) -> str:
+        return str(self._get_config_file().absolute())
+
+    def init(self):
+        config = CliConfig()
+        raw_json = config.model_dump_json()
+        with atomic_write(self.config_file) as file:
+            file.write(raw_json)
+
+    def _get_config_dir(self) -> Path:
+        path = Path(user_config_dir("vmt"))
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def _get_config_file(self) -> Path:
+        return self._get_config_dir() / "config.json"
+
+    def _read_config(self) -> CliConfig:
+        if self.exists():
+            raw_json = self.config_file.read_text()
+            return CliConfig.model_validate_json(raw_json)
+
+        return CliConfig()
 
 
 class SessionRepository(Protocol):
@@ -264,7 +297,7 @@ class CliContext:
     def __init__(self, *, verbose: bool) -> None:
         self.verbose: bool = verbose
         self.data_dir: Path = CliContext.get_data_dir()
-        self.config = self.read_config()
+        self.config_file: ConfigFile = ConfigFile()
         self.active_session: Session | None = None
         self.repo = self._initialize_configured_repo(data_dir=self.data_dir)
         self.active_session = self.repo.active_session()
@@ -372,15 +405,15 @@ class CliContext:
         return path
 
     @staticmethod
-    def read_config() -> ConfigFile:
+    def read_config() -> CliConfig:
         config_dir: Path = CliContext.get_config_dir()
         config_file: Path = config_dir / "config.json"
 
         if config_file.exists():
             raw_json = config_file.read_text()
-            return ConfigFile.model_validate_json(raw_json)
+            return CliConfig.model_validate_json(raw_json)
 
-        return ConfigFile()
+        return CliConfig()
 
     _REPOS: dict[str, type[SessionRepository]] = {
         StorageFormat.JSON: JsonRepository,
@@ -388,7 +421,7 @@ class CliContext:
     }
 
     def _initialize_configured_repo(self, **config) -> SessionRepository:
-        format = self.config.storage_format
+        format = self.config_file.config.storage_format
         try:
             return self._REPOS[format](**config)
         except KeyError:
@@ -641,3 +674,26 @@ def log(cli_ctx: CliContext):
             )
 
         click.echo("")
+
+
+# define `config` subcommand
+@cli.command()
+@click.option(
+    "--init",
+    help="Initialize a config file with minimal defaults",
+    is_flag=True,
+)
+@pass_cli
+def config(cli_ctx: CliContext, init: bool):
+    if init:
+        if cli_ctx.config_file.exists():
+            click.echo("The config file already exists.")
+            click.echo(f"Location: {cli_ctx.config_file.location()}")
+        else:
+            cli_ctx.config_file.init()
+            click.echo("A base config file has been initialized with minimal defaults.")
+            click.echo(f"Location: {cli_ctx.config_file.location()}")
+    else:
+        click.echo(
+            "The config subcommand only suppports the `--init` flag at this time"
+        )
