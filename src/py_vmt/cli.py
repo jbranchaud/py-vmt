@@ -22,9 +22,9 @@ class StorageFormat(StrEnum):
     SQLITE = "sqlite"
     JSON = "json"
 
-    @staticmethod
-    def default():
-        return StorageFormat.SQLITE
+    @classmethod
+    def default(cls) -> "StorageFormat":
+        return cls.SQLITE
 
 
 class ConfigFile(BaseModel):
