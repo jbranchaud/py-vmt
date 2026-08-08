@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgraded the project to Python 3.14 (now requires Python >= 3.14).
 - Config file parsing now uses pydantic to validate settings, with a
   `StorageFormat` enum (`sqlite`, `json`) for the storage format.
 

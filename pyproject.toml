@@ -5,7 +5,7 @@ description = "A command-line time tracker for your project and work sessions"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 authors = [{ name = "Josh Branchaud", email = "jbranchaud@gmail.com" }]
 keywords = ["cli", "time-tracking", "timer", "productivity", "tracker"]
 classifiers = [
@@ -14,15 +14,14 @@ classifiers = [
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Utilities",
 ]
 dependencies = [
-    "click>=8.3.1",
-    "dateparser>=1.3.0",
-    "platformdirs>=4.9.4",
-    "pydantic>=2.13.4",
+  "click>=8.3.1",
+  "dateparser>=1.3.0",
+  "platformdirs>=4.9.4",
+  "pydantic>=2.13.4",
 ]
 
 [project.urls]
