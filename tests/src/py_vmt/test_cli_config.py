@@ -11,12 +11,6 @@ import pytest
 def use_tmp_platform_dirs(tmp_path, monkeypatch):
     config_dir = tmp_path / "config"
     config_dir.mkdir()
-
-    # override the `config.json` a little
-    # (config_dir / "config.json").write_text(
-    #     json.dumps({"storage_format": storage_format})
-    # )
-
     monkeypatch.setattr(ConfigFile, "_get_config_dir", staticmethod(lambda: config_dir))
 
 
