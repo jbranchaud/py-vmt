@@ -6,7 +6,7 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from pydantic import BaseModel
 from sqlite3 import Connection
-from typing import Protocol
+from typing import Literal, Protocol
 
 import click
 from platformdirs import user_config_dir, user_data_dir
@@ -23,7 +23,7 @@ class StorageFormat(StrEnum):
     JSON = "json"
 
     @classmethod
-    def default(cls) -> "StorageFormat":
+    def default(cls) -> Literal[StorageFormat.SQLITE]:
         return cls.SQLITE
 
 
