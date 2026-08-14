@@ -44,3 +44,18 @@ def test_start_help_message():
           +TAG  Attach one or more tags, e.g. +meeting +engineering
     """)
     assert output in help_result.output
+
+
+def test_config_help_message():
+    runner = BetterCliRunner()
+
+    help_result = runner.invoke(cli, ["config", "--help"])
+    output = textwrap.dedent("""\
+        Usage: vmt config [OPTIONS]
+
+        Options:
+          --path  Show location of config file if it exists
+          --init  Initialize a config file with minimal defaults
+          --help  Show this message and exit.
+    """)
+    assert output in help_result.output
