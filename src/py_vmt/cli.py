@@ -32,6 +32,8 @@ class CliConfig(BaseModel):
 
 
 class ConfigFile:
+    FILENAME = "config.json"
+
     def __init__(self):
         self.config_file: Path = self._get_config_file()
         self.config: CliConfig = self._read_config()
@@ -40,6 +42,7 @@ class ConfigFile:
         return self.config_file.exists()
 
     def location(self) -> str:
+        # TODO: try using `resolve` instead of `absolute` here
         return str(self._get_config_file().absolute())
 
     def init(self):
@@ -54,7 +57,7 @@ class ConfigFile:
         return path
 
     def _get_config_file(self) -> Path:
-        return self._get_config_dir() / "config.json"
+        return self._get_config_dir() / ConfigFile.FILENAME
 
     def _read_config(self) -> CliConfig:
         if self.exists():
@@ -404,6 +407,7 @@ class CliContext:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
+    # TODO: Remove this method, it is no longer being used.
     @staticmethod
     def read_config() -> CliConfig:
         config_dir: Path = CliContext.get_config_dir()
@@ -679,12 +683,25 @@ def log(cli_ctx: CliContext):
 # define `config` subcommand
 @cli.command()
 @click.option(
+    "--path",
+    help="Show location of config file if it exists",
+    is_flag=True,
+)
+@click.option(
     "--init",
     help="Initialize a config file with minimal defaults",
     is_flag=True,
 )
 @pass_cli
-def config(cli_ctx: CliContext, init: bool):
+def config(cli_ctx: CliContext, path: bool, init: bool):
+    if path:
+        if cli_ctx.config_file.exists():
+            click.echo(cli_ctx.config_file.location())
+            return
+        else:
+            click.echo("vmt: no config file found", err=True)
+            raise click.exceptions.Exit(1)
+
     if init:
         if cli_ctx.config_file.exists():
             click.echo("The config file already exists.")

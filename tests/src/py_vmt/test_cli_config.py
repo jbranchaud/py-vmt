@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 import textwrap
 
 from conftest import BetterCliRunner
@@ -8,10 +10,33 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
-def use_tmp_platform_dirs(tmp_path, monkeypatch):
-    config_dir = tmp_path / "config"
+def config_dir(tmp_path: Path, monkeypatch) -> Path:
+    config_dir: Path = tmp_path / "config"
     config_dir.mkdir()
     monkeypatch.setattr(ConfigFile, "_get_config_dir", staticmethod(lambda: config_dir))
+
+    return config_dir
+
+
+def test_config_path(config_dir: Path):
+    config_file = config_dir / ConfigFile.FILENAME
+    config_file.write_text(json.dumps({"storage_format": "json"}))
+
+    runner = BetterCliRunner()
+
+    config_result = runner.invoke(cli, ["config", "--path"])
+    output = f"{config_file}"
+    assert output in config_result.output
+    assert config_result.exit_code == 0
+
+
+def test_config_path_no_config_file():
+    runner = BetterCliRunner()
+
+    config_result = runner.invoke(cli, ["config", "--path"])
+    output = "vmt: no config file found\n"
+    assert output == config_result.output
+    assert config_result.exit_code == 1
 
 
 def test_config_init():
