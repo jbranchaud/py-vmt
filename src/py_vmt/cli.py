@@ -400,24 +400,6 @@ class CliContext:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    @staticmethod
-    def get_config_dir() -> Path:
-        path = Path(user_config_dir("vmt"))
-        path.mkdir(parents=True, exist_ok=True)
-        return path
-
-    # TODO: Remove this method, it is no longer being used.
-    @staticmethod
-    def read_config() -> CliConfig:
-        config_dir: Path = CliContext.get_config_dir()
-        config_file: Path = config_dir / "config.json"
-
-        if config_file.exists():
-            raw_json = config_file.read_text()
-            return CliConfig.model_validate_json(raw_json)
-
-        return CliConfig()
-
     _REPOS: dict[str, type[SessionRepository]] = {
         StorageFormat.JSON: JsonRepository,
         StorageFormat.SQLITE: SqliteRepository,

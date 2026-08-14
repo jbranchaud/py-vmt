@@ -5,7 +5,7 @@ import pytest
 from conftest import BetterCliRunner
 from freezegun import freeze_time
 
-from py_vmt.cli import CliContext, cli, StorageFormat
+from py_vmt.cli import CliContext, ConfigFile, StorageFormat, cli
 
 
 # Sort of documented here: https://docs.pytest.org/en/stable/example/parametrize.html#parametrization-with-multiple-fixtures
@@ -29,7 +29,7 @@ def use_tmp_platform_dirs(tmp_path, monkeypatch, storage_format):
     )
 
     monkeypatch.setattr(CliContext, "get_data_dir", staticmethod(lambda: data_dir))
-    monkeypatch.setattr(CliContext, "get_config_dir", staticmethod(lambda: config_dir))
+    monkeypatch.setattr(ConfigFile, "_get_config_dir", staticmethod(lambda: config_dir))
 
 
 def test_no_status():
