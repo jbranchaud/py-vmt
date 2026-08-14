@@ -1,15 +1,15 @@
 import collections
-from enum import StrEnum
 import json
 import sqlite3
 from datetime import UTC, date, datetime, timedelta
+from enum import StrEnum
 from pathlib import Path
-from pydantic import BaseModel
 from sqlite3 import Connection
 from typing import Literal, Protocol
 
 import click
 from platformdirs import user_config_dir, user_data_dir
+from pydantic import BaseModel
 
 from py_vmt import db, time_helpers
 from py_vmt.file_utils import atomic_write
