@@ -42,8 +42,7 @@ class ConfigFile:
         return self.config_file.exists()
 
     def location(self) -> str:
-        # TODO: try using `resolve` instead of `absolute` here
-        return str(self._get_config_file().absolute())
+        return str(self._get_config_file().resolve())
 
     def init(self):
         config = CliConfig()
