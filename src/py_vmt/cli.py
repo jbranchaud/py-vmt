@@ -67,6 +67,7 @@ class ConfigFile:
 
 
 class SessionRepository(Protocol):
+    def identifier(self) -> str: ...
     def active_session(self) -> Session | None: ...
     def write_active_session(self, session) -> None: ...
     def all_sessions(self) -> list[Session]: ...
@@ -85,6 +86,9 @@ class SqliteRepository:
 
         # always migrate the DB as part of initialization, this will mostly be a no-op
         db.migrate(self.conn)
+
+    def identifier(self) -> str:
+        return StorageFormat.SQLITE
 
     def active_session(self) -> Session | None:
         fetch_active_session_sql = """
@@ -256,6 +260,9 @@ class JsonRepository:
     def __init__(self, *, data_dir: Path) -> None:
         self.active_session_file: Path = data_dir / "active_session.json"
         self.session_log_file: Path = data_dir / "session_log.json"
+
+    def identifier(self) -> str:
+        return StorageFormat.JSON
 
     def active_session(self) -> Session | None:
         if self.active_session_file.exists():
