@@ -32,6 +32,11 @@ def use_tmp_platform_dirs(tmp_path, monkeypatch, storage_format):
     monkeypatch.setattr(ConfigFile, "_get_config_dir", staticmethod(lambda: config_dir))
 
 
+def test_storage_format_matches_config(storage_format):
+    ctx = CliContext(verbose=False)
+    assert ctx.repo.identifier() == storage_format
+
+
 def test_no_status():
     runner = BetterCliRunner()
     result = runner.invoke(cli, ["status"])
