@@ -66,6 +66,7 @@ class ConfigFile:
         return CliConfig()
 
 
+# TODO: Switch from Protocol to ABC. This ultimately isn't a great usecase for Protocol.
 class SessionRepository(Protocol):
     def identifier(self) -> str: ...
     def active_session(self) -> Session | None: ...
@@ -348,6 +349,9 @@ class CliContext:
 
         return session
 
+    # TODO: Rewrite this logic. Possibly move it into each SessionRepository so
+    # that they can each handle the logic themselves. The current implementation
+    # is clunky because of how generalized it is trying to be.
     def load_latest_sessions(self) -> DateToSessionDict:
         existing_sessions = self.repo.all_sessions()
 
