@@ -3,6 +3,7 @@ import json
 import sqlite3
 from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
+from importlib.metadata import version
 from pathlib import Path
 from sqlite3 import Connection
 from typing import Literal, Protocol
@@ -14,6 +15,8 @@ from pydantic import BaseModel
 from py_vmt import db, time_helpers
 from py_vmt.file_utils import atomic_write
 from py_vmt.session import Session
+
+VMT_VERSION = version("visualmode-tracker")
 
 type DateToSessionDict = collections.defaultdict[date, list[Session]]
 
@@ -438,7 +441,7 @@ pass_cli = click.make_pass_decorator(CliContext)
     is_flag=True,
 )
 @click.pass_context
-@click.version_option(prog_name="vmt")
+@click.version_option(version=VMT_VERSION, prog_name="vmt")
 def cli(ctx: click.Context, verbose: bool):
     ctx.ensure_object(dict)
     ctx.obj = CliContext(verbose=verbose)
@@ -706,3 +709,34 @@ def config(cli_ctx: CliContext, path: bool, init: bool):
         click.echo(
             "The config subcommand only suppports the `--init` flag at this time"
         )
+
+
+# define `info` subcommand
+@cli.command()
+@click.option(
+    "--json",
+    "use_json",
+    help="Output all info details in JSON format",
+    is_flag=True,
+)
+@pass_cli
+def info(cli_ctx: CliContext, use_json: bool):
+    extras = {}
+    if isinstance(cli_ctx.repo, SqliteRepository):
+        extras["schema_version"] = db.schema_version(cli_ctx.repo.conn)
+
+    # gather info as dict
+    info_details = {
+        "config_file": str(cli_ctx.config_file.location()),
+        "data_dir": str(cli_ctx.data_dir),
+        "version": VMT_VERSION,
+        **extras,
+    }
+
+    if use_json:
+        click.echo(json.dumps(info_details, indent=2))
+    else:
+        lines: list[str] = []
+        for _index, (key, value) in enumerate(info_details.items()):
+            lines.append(f"{key} : {value}")
+        click.echo("\n".join(lines))
