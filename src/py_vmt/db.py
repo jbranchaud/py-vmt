@@ -44,8 +44,12 @@ MIGRATIONS = [
 # sets of statements in `MIGRATIONS` that have not been run yet. It then
 # executes those and updates `user_version`.
 def migrate(conn: Connection):
-    version = conn.execute("pragma user_version").fetchone()[0]
+    version = schema_version(conn)
     for i, statement in enumerate(MIGRATIONS[version:], start=version):
         conn.executescript(statement)
         conn.execute(f"pragma user_version = {i + 1}")
     conn.commit()
+
+
+def schema_version(conn: Connection):
+    return conn.execute("pragma user_version").fetchone()[0]

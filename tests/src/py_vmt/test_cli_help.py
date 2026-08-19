@@ -20,6 +20,7 @@ def test_base_help_message():
         Commands:
           cancel
           config
+          info
           log
           start
           status

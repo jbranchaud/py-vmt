@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `vmt config --init` to generate a config file with default settings, printing
   its location (and a notice if one already exists).
 - `vmt config --path` to print the path to the config file.
+- `vmt info` to show the config file path, data dir, and version (plus schema
+  version when using sqlite storage), with a `--json` flag for JSON output.
 
 ### Changed
 
