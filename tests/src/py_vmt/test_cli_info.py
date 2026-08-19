@@ -34,10 +34,10 @@ def test_info(config_dir: Path, data_dir: Path):
 
     info_result = runner.invoke(cli, ["info"])
     output = textwrap.dedent(f"""
-    config_file : {config_file}
-    data_dir : {data_dir}
-    version : {VMT_VERSION}
-    schema_version : 1
+        config_file : {config_file}
+        data_dir : {data_dir}
+        version : {VMT_VERSION}
+        schema_version : 1
     """).strip()
     assert output in info_result.output
 
