@@ -1,5 +1,3 @@
-# Tokens live in mise.local.toml (gitignored). See mise.local.toml.example.
-
 [tools]
 uv = "latest"
 
@@ -10,6 +8,7 @@ run = ["rm -rf dist", "uv build"]
 [tasks.publish-test]
 description = "publish to TestPyPI"
 depends = ["build"]
+# put TEST_PYPI_TOKEN in mise.local.toml
 run = 'uv publish --publish-url https://test.pypi.org/legacy/ --token "$TEST_PYPI_TOKEN"'
 
 # No publish-to-PyPI task on purpose: real releases go through the tag-triggered
