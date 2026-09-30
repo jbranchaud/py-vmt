@@ -9,7 +9,14 @@ tasks:
       - task: test
       - task: typecheck
       - task: lint
+        vars: { FIX: '{{.FIX}}' }
       - task: fmt
+    silent: true
+  fix:
+    desc: 'pre-push checklist, with ruff autofixing what it can'
+    cmds:
+      - task: default
+        vars: { FIX: '--fix' }
     silent: true
   test:
     desc: 'run pytest suite'
@@ -20,9 +27,9 @@ tasks:
     cmds:
       - uv run basedpyright
   lint:
-    desc: 'run ruff linter'
+    desc: 'run ruff linter (pass FIX=--fix to autofix)'
     cmds:
-      - uv run ruff check
+      - uv run ruff check {{.FIX}}
   fmt:
     desc: 'run ruff code formatting'
     cmds:
