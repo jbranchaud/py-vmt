@@ -368,7 +368,7 @@ class CliContext:
             sessions_for_date = [
                 sesh
                 for sesh in existing_sessions
-                if sesh.start_time.date() == previous_date
+                if sesh.start_time.astimezone().date() == previous_date
             ]
 
             if sessions_for_date:

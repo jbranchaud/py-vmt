@@ -411,9 +411,14 @@ def test_log_recent_activity():
         runner.invoke(cli, ["start", "TIL", "+writing", "+learning"])
         frozen_datetime.tick(delta=datetime.timedelta(hours=3, minutes=3))
         runner.invoke(cli, ["stop"])
+        # record a session in evening
+        frozen_datetime.tick(delta=datetime.timedelta(hours=4, minutes=28))
+        runner.invoke(cli, ["start", "side-proj"])
+        frozen_datetime.tick(delta=datetime.timedelta(minutes=45))
+        runner.invoke(cli, ["stop"])
 
         # to the next day
-        frozen_datetime.tick(delta=datetime.timedelta(hours=14))
+        frozen_datetime.tick(delta=datetime.timedelta(hours=8, minutes=47))
 
         # record one more day
         runner.invoke(cli, ["start", "Client A", "+meeting", "--at", "33 minutes ago"])
@@ -437,6 +442,7 @@ Yesterday
 Sunday, March 15
   7:05AM - 11:37AM		4h32m		'still'
   12:05PM - 3:08PM		3h3m		'TIL' [writing learning]
+  7:36PM - 8:21PM\t\t45m\t\t'side-proj'
 
 Saturday, March 14
   10:05AM - 6:05PM		8h		'TIL' [writing learning]
