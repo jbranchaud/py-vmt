@@ -86,25 +86,26 @@ and the **patch** version for bug fixes only.
 Every PR adds a user-facing entry under `## [Unreleased]` in `CHANGELOG.md`.
 Feature PRs don't change the version.
 
-To cut a release from `main`:
+To cut a release, run the `release` task from an up-to-date `main`:
 
-1. Bump the version:
+```bash
+❯ mise run release minor --dry-run  # check and preview, changes nothing
+❯ mise run release minor            # or patch / major
+```
 
-   ```bash
-   ❯ uv version --bump minor  # or patch
-   ```
+It checks that `main` is clean and matches `origin/main`, that CI is green and
+that `[Unreleased]` has entries. After you confirm, it:
 
-2. In `CHANGELOG.md`, rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`, add a
-   fresh empty `[Unreleased]` section, and update the compare links at the
-   bottom.
-3. Commit as `Release vX.Y.Z`.
-4. Tag and push:
+1. bumps the version and rolls `[Unreleased]` into a dated `[X.Y.Z]` section in
+   `CHANGELOG.md`,
+2. builds the package and smoke tests the wheel,
+3. commits `Release vX.Y.Z` and creates the annotated tag (rolling back locally
+   if any of this fails),
+4. pushes `main` and the tag together, which triggers the `release` workflow to
+   publish to PyPI via Trusted Publishing,
+5. waits for that workflow, then creates the GitHub Release from the changelog
+   notes.
 
-   ```bash
-   ❯ git tag -a vX.Y.Z -m "vX.Y.Z"
-   ❯ git push --follow-tags
-   ```
-
-Pushing the tag triggers the `release` workflow, which checks that the tag
-matches the package version, builds the package, and publishes it to PyPI via
-Trusted Publishing.
+If the workflow fails before anything reaches PyPI, fix it, re-run the workflow,
+and finish with `mise run release --resume vX.Y.Z`. If a version did reach PyPI,
+never reuse it: fix the problem and release a new patch version.
