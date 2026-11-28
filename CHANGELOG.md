@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Config file parsing now uses pydantic to validate settings, with a
   `StorageFormat` enum (`sqlite`, `json`) for the storage format.
 
+### Fixed
+
+- `vmt log` now groups sessions by local date. Sessions started in the evening
+  were listed under the next day.
+
 ## [0.1.0] - 2026-08-02
 
 ### Added
