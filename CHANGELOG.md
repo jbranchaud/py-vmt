@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-28
+
 ### Added
 
 - `vmt config --init` to generate a config file with default settings, printing
@@ -38,5 +40,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `vmt log` to display sessions tracked over the last 7 days.
 - Session tags (e.g. `+python`) for categorizing tracked work.
 
-[Unreleased]: https://github.com/jbranchaud/py-vmt/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/jbranchaud/py-vmt/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/jbranchaud/py-vmt/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/jbranchaud/py-vmt/releases/tag/v0.1.0
