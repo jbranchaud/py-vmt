@@ -31,14 +31,18 @@ Last: 'py-vmt' [python] (30m) at 12:00PM
 
 ## Installation
 
-`vmt` (`visualmode-tracker`) can be installed via `uv` and `pipx`:
+`vmt` (`visualmode-tracker`) requires Python 3.14+ and can be installed via
+`uv` and `pipx`:
 
 ```bash
 ❯ uv tool install visualmode-tracker
 ```
 
+`uv` downloads Python 3.14 if you don't already have it. `pipx` uses the Python
+it runs on, so point it at 3.14 if that isn't your default:
+
 ```bash
-❯ pipx install visualmode-tracker
+❯ pipx install --python python3.14 visualmode-tracker
 ```
 
 Note: that while the package name on PyPI is `visualmode-tracker`, the
