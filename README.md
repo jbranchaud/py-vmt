@@ -71,3 +71,40 @@ Run the tests like so:
 ```bash
 ❯ uv run pytest
 ```
+
+## Releasing
+
+This project follows [Semantic Versioning](https://semver.org/) and keeps a
+[`CHANGELOG.md`](CHANGELOG.md) in the
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format. The CLI
+surface (commands, flags, output format, exit codes, config/data locations, and
+supported Python versions) is the public API.
+
+While on `0.x`, bump the **minor** version for new features or breaking changes
+and the **patch** version for bug fixes only.
+
+Every PR adds a user-facing entry under `## [Unreleased]` in `CHANGELOG.md`.
+Feature PRs don't change the version.
+
+To cut a release from `main`:
+
+1. Bump the version:
+
+   ```bash
+   ❯ uv version --bump minor  # or patch
+   ```
+
+2. In `CHANGELOG.md`, rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`, add a
+   fresh empty `[Unreleased]` section, and update the compare links at the
+   bottom.
+3. Commit as `Release vX.Y.Z`.
+4. Tag and push:
+
+   ```bash
+   ❯ git tag -a vX.Y.Z -m "vX.Y.Z"
+   ❯ git push --follow-tags
+   ```
+
+Pushing the tag triggers the `release` workflow, which checks that the tag
+matches the package version, builds the package, and publishes it to PyPI via
+Trusted Publishing.
